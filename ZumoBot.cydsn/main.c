@@ -56,6 +56,7 @@ int zmain(void)
     reflectance_offset reflectance_offset = {0,0,0};
     sensors reflectance_values;
     bool reflectance_black = false;
+    bool low_voltage_detected = false;
     uint8_t cross_count = 0;
     int line_shift_change;
     int line_shift;
@@ -76,12 +77,18 @@ int zmain(void)
     IR_Start();
     
     for (;;) {  
-        if(!voltage_test()) {
+        if (!voltage_test() && !low_voltage_detected) {
             print_mqtt("Zumo/WARNING", "Low voltage!");
-            vTaskDelay(1000);
+            low_voltage_detected = true;
+            PWM_Stop();
+            vTaskDelay(10000);
+        } else if (voltage_test() && low_voltage_detected) {
+            print_mqtt("Zumo/DEBUG", "Voltage normal");
+            low_voltage_detected = false;
+            PWM_Start();
         }
         
-        if(!cross_detected()) {
+        if (!cross_detected()) {
             if(reflectance_black) {
                 ++cross_count;
             }
@@ -105,7 +112,6 @@ int zmain(void)
         shift_correction = line_shift * p_coefficient + line_shift_change * d_coefficient;
         
         if (movement_allowed) {
-            
         }
         
         if (0) {
