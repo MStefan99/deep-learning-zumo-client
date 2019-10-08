@@ -55,6 +55,7 @@ int zmain(void)
 {   
     reflectance_offset reflectance_offset = {0,0,0};
     sensors reflectance_values;
+    list log = new_list(); 
     bool reflectance_black = false;
     bool low_voltage_detected = false;
     uint8_t cross_count = 0;
@@ -126,6 +127,15 @@ int zmain(void)
             print_mqtt("Zumo/Status", "L1: %i", reflectance_values.l1);
             print_mqtt("Zumo/Status", "L2: %i", reflectance_values.l2);
             print_mqtt("Zumo/Status", "L3: %i\n", reflectance_values.l3);
+            vTaskDelay(2000);
+        }
+        
+        if (0) {
+            list_append(&log, "First");
+            list_append(&log, "Second");
+            print_mqtt("Zumo/log", "Log size: %i", list_get_size(log));
+            list_printAll(log);
+            list_wipe(&log);
             vTaskDelay(2000);
         }
     }

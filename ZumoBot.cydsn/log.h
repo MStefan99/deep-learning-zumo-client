@@ -19,25 +19,33 @@
     #include <stdio.h>
     #include <mqtt_sender.h>
     
-    typedef struct {
-        char *title;
-        char *time;
-    } log_entry;
-
-    // Makes a valid log line from passed arguments (used for log_add)
-    log_entry make_entry(char *title, char *time);
+    #define LOG_LENGTH 32  // The longer the entry, the less entries will fit in memory
     
-    // Adds a new log line
-    void log_add(char *title, char *time);
+    typedef struct node_ {
+        char str[LOG_LENGTH];
+        struct node_ *next;
+        struct node_ *prev;
+    } element;
 
-    // Reads the desired log line (unsafe!)
-    log_entry log_read(int index);
 
-    // Outputs the entire log via serial connection (USB)
-    void log_output();
-    
-    // Sends the entire log via mqtt
-    void log_send();
+    typedef struct list_ {
+        element *first;
+        element *last;
+        int e_count;
+    } list;
+
+
+    list new_list();
+    element *list_alloc_element(char *str, element *prev, element *next);
+
+    int list_append(list *l, char *str);
+    int list_appendLeft(list *l, char *str);
+    int list_pop(list *l, char *str);
+    int list_popLeft(list *l, char *str);
+    void list_wipe(list *l);
+
+    int list_get_size(list l);
+    void list_printAll(list l);
 
 #endif
 
