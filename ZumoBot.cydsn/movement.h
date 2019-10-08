@@ -12,14 +12,40 @@
 
 #ifndef MOVEMENT_H
 #define MOVEMENT_H
-
+    #include <Motor.h>
+    #include <stdlib.h>
+    #include <FreeRTOS.h>
+    #include <task.h>
     #include <stdint.h>
-
-    // Does the tank turn of the robot. Allowed modes for direction: 0 (left), 1 (right).
-    void motor_tank_turn(uint8_t direction, uint8_t speed, float delay);
-
-    // Turns the robot with a desired speed speed using speed difference
+    #include "line_detection.h"
+    
+    
+    typedef enum {
+        forward,
+        right,
+        back, 
+        left
+    } direction;
+    
+    
+    typedef struct {
+        int x;
+        int y;
+        int direction;
+    } state;
+    
+    
+    extern const float p_coefficient;
+    extern const float d_coefficient;
+    extern state robot_state;
+    
+    
+    void motor_tank_turn(direction dir, uint8_t speed, float delay);
     void motor_turn_diff(uint8_t speed, int diff);
+    void move_to_next_intersection(uint8_t speed);
+    void rotate(direction dir, uint8_t speed);
+    int motor_enabled();
+    void set_motor_state(int state);
 
 #endif
 

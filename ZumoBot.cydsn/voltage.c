@@ -10,8 +10,6 @@
  * ========================================
 */
 #include "voltage.h"
-#include <project.h>
-
 
 float battery_voltage() {
     float result = 0;
@@ -26,13 +24,13 @@ float battery_voltage() {
     return result;
 }
 
-bool voltage_test() {
+int voltage_test() {
     float voltage = battery_voltage();
         
     if (voltage > 3.8) {
-        return true;
+        return 1;
     } else {
-        return false;
+        return 0;
     } 
 }
 

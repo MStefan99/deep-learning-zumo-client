@@ -12,8 +12,6 @@
 
 #ifndef LOG_H_
 #define LOG_H_
-
-    #include <stdbool.h>
     #include <FreeRTOS.h>
     #include <stdlib.h>
     #include <stdio.h>
