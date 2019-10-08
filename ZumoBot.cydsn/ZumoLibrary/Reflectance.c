@@ -11,9 +11,9 @@
 
 #include "Reflectance.h"
 
-static volatile struct sensors_ sensors;
-static volatile struct sensors_  digital_sensor_value;
-static struct sensors_ threshold = { 10000, 10000, 10000, 10000, 10000, 10000};
+static volatile sensors sensor_data;
+static volatile sensors digital_sensor_value;
+static sensors threshold = { 10000, 10000, 10000, 10000, 10000, 10000};
 static TaskHandle_t ReflectanceHandle = NULL;
 
 /**
@@ -43,45 +43,45 @@ void ReflectanceTask( void *pvParameters )
         statusL1 = Timer_L1_ReadStatusRegister();
 
         if(statusR1 & Timer_R1_STATUS_CAPTURE) {
-            sensors.r1 = Timer_R1_ReadPeriod() - Timer_R1_ReadCapture();
+            sensor_data.r1 = Timer_R1_ReadPeriod() - Timer_R1_ReadCapture();
         }
         else {
-            sensors.r1 = Timer_R1_ReadPeriod() - Timer_R1_ReadCounter();
+            sensor_data.r1 = Timer_R1_ReadPeriod() - Timer_R1_ReadCounter();
         }
         
         if(statusL1 & Timer_L1_STATUS_CAPTURE) {
-            sensors.l1 = Timer_L1_ReadPeriod() - Timer_L1_ReadCapture();
+            sensor_data.l1 = Timer_L1_ReadPeriod() - Timer_L1_ReadCapture();
         }
         else {
-            sensors.l1 = Timer_L1_ReadPeriod() - Timer_L1_ReadCounter();
+            sensor_data.l1 = Timer_L1_ReadPeriod() - Timer_L1_ReadCounter();
         }
 
         if(statusR2 & Timer_R2_STATUS_CAPTURE) {
-            sensors.r2 = Timer_R2_ReadPeriod() - Timer_R2_ReadCapture();
+            sensor_data.r2 = Timer_R2_ReadPeriod() - Timer_R2_ReadCapture();
         }
         else {
-            sensors.r2 = Timer_R2_ReadPeriod() - Timer_R2_ReadCounter();
+            sensor_data.r2 = Timer_R2_ReadPeriod() - Timer_R2_ReadCounter();
         }
         
         if(statusL2 & Timer_L2_STATUS_CAPTURE) {
-            sensors.l2 = Timer_L2_ReadPeriod() - Timer_L2_ReadCapture();
+            sensor_data.l2 = Timer_L2_ReadPeriod() - Timer_L2_ReadCapture();
         }
         else {
-            sensors.l2 = Timer_L2_ReadPeriod() - Timer_L2_ReadCounter();
+            sensor_data.l2 = Timer_L2_ReadPeriod() - Timer_L2_ReadCounter();
         }
         
         if(statusR3 & Timer_R3_STATUS_CAPTURE) {
-            sensors.r3 = Timer_R3_ReadPeriod() - Timer_R3_ReadCapture();
+            sensor_data.r3 = Timer_R3_ReadPeriod() - Timer_R3_ReadCapture();
         }
         else {
-            sensors.r3 = Timer_R3_ReadPeriod() - Timer_R3_ReadCounter();
+            sensor_data.r3 = Timer_R3_ReadPeriod() - Timer_R3_ReadCounter();
         }
         
         if(statusL3 & Timer_L3_STATUS_CAPTURE) {
-            sensors.l3 = Timer_L3_ReadPeriod() - Timer_L3_ReadCapture();
+            sensor_data.l3 = Timer_L3_ReadPeriod() - Timer_L3_ReadCapture();
         }
         else {
-            sensors.l3 = Timer_L3_ReadPeriod() - Timer_L3_ReadCounter();
+            sensor_data.l3 = Timer_L3_ReadPeriod() - Timer_L3_ReadCounter();
         }
         
         
@@ -138,9 +138,9 @@ void reflectance_start()
 * @brief    Read reflectance sensor values
 * @details
 */
-void reflectance_read(struct sensors_ *values)
+void reflectance_read(sensors *values)
 {
-    *values = sensors;
+    *values = sensor_data;
 }
 
 
@@ -151,32 +151,32 @@ void reflectance_read(struct sensors_ *values)
 void reflectance_digital(struct sensors_ *digital)
 {
     //if the results of reflectance_period function is over threshold, set digital_sensor_value to 1, which means it's black
-    if(sensors.l3 < threshold.l3)
+    if(sensor_data.l3 < threshold.l3)
         digital->l3 = 0;
     else
         digital->l3 = 1;
     
-    if(sensors.l2 < threshold.l2)
+    if(sensor_data.l2 < threshold.l2)
         digital->l2 = 0;
     else
         digital->l2 = 1;
     
-    if(sensors.l1 < threshold.l1)
+    if(sensor_data.l1 < threshold.l1)
         digital->l1 = 0;
     else
         digital->l1 = 1;
     
-    if(sensors.r1 < threshold.r1)
+    if(sensor_data.r1 < threshold.r1)
         digital->r1 = 0;
     else
         digital->r1 = 1;
     
-    if(sensors.r2 < threshold.r2)
+    if(sensor_data.r2 < threshold.r2)
         digital->r2 = 0;
     else
         digital->r2 = 1;
     
-    if(sensors.r3 < threshold.r3)
+    if(sensor_data.r3 < threshold.r3)
         digital->r3 = 0;
     else
         digital->r3 = 1;

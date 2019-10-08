@@ -16,8 +16,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-void motor_tank_turn(uint8_t direction, uint8_t speed, float delay)
-{
+void motor_tank_turn(uint8_t direction, uint8_t speed, float delay) {
     MotorDirLeft_Write(!direction);
     MotorDirRight_Write(direction);
     PWM_WriteCompare1(speed); 
@@ -29,12 +28,11 @@ void motor_tank_turn(uint8_t direction, uint8_t speed, float delay)
     MotorDirRight_Write(0);
 }
 
-void motor_turn_diff(uint8_t speed, int diff)
-{
+void motor_turn_diff(uint8_t speed, int diff) {
     uint8_t l_speed = speed;
     uint8_t r_speed = speed;
-    if (abs(diff) > speed){
-        if(diff>0){
+    if (abs(diff) > speed) {
+        if(diff>0) {
             r_speed=0;
         } else {
             l_speed=0;

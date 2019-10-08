@@ -16,26 +16,26 @@
     #include <stdbool.h>
     #include <Reflectance.h>
     
-    typedef struct sensors_difference_{
+    typedef struct reflectance_offset_ {
         int16_t sensor1;
         int16_t sensor2;
         int16_t sensor3;    
-    } reflectance_offset_;
+    } reflectance_offset;
     
     // Sets the calibration between right and left sensors
-    struct sensors_difference_ reflectance_calibrate(struct sensors_ *ref_readings); 
+    reflectance_offset reflectance_calibrate(sensors *ref_readings); 
     
     // Edits the reflectance readings according to previous calibration
-    void reflectance_normalize(struct sensors_ *ref_readings, struct sensors_difference_ *ref_offset); 
+    void reflectance_normalize(sensors *ref_readings, reflectance_offset *ref_offset); 
     
     // Returns offset from the line
-    int get_offset(struct sensors_ *ref_readings);
+    int get_offset(sensors *ref_readings);
     
     // Returns 0 if on line, 1 if line is on the right and -1 if on the left
     int is_following_line();
     
     // Returns change in offset from the line
-    int get_offset_change(struct sensors_ *ref_readings);
+    int get_offset_change(sensors *ref_readings);
     
     // Detects cross 
     bool cross_detected();

@@ -15,36 +15,32 @@
 static bool line_lost;
 static bool line_lost_direction;
 
-bool cross_detected() 
-{
+bool cross_detected() {
     struct sensors_ ref_readings;
     const uint16_t threshold = 20000;
     reflectance_read(&ref_readings);
-    if(ref_readings.l3 + ref_readings.l2 + ref_readings.l1 + ref_readings.r1 + ref_readings.r2 + ref_readings.r3 > threshold * 4){
+    if(ref_readings.l3 + ref_readings.l2 + ref_readings.l1 + ref_readings.r1 + ref_readings.r2 + ref_readings.r3 > threshold * 4) {
         return true;
     }
     
     return false;
 }
 
-struct sensors_difference_ reflectance_calibrate(struct sensors_ *ref_readings)
-{
-    struct sensors_difference_ sensor_diff;
+reflectance_offset reflectance_calibrate(sensors *ref_readings) {
+    reflectance_offset sensor_diff;
     sensor_diff.sensor1 = ref_readings->r1 - ref_readings->l1; 
     sensor_diff.sensor2 = ref_readings->r2 - ref_readings->l2; 
     sensor_diff.sensor3 = ref_readings->r3 - ref_readings->l3; 
     return sensor_diff;
 }
 
-void reflectance_normalize(struct sensors_ *ref_readings, struct sensors_difference_ *ref_offset)
-{
+void reflectance_normalize(sensors *ref_readings, reflectance_offset *ref_offset) {
     ref_readings->r1 -= ref_offset->sensor1;
     ref_readings->r2 -= ref_offset->sensor2;
     ref_readings->r3 -= ref_offset->sensor3;
 }
 
-int get_offset(struct sensors_ *ref_readings)
-{
+int get_offset(struct sensors_ *ref_readings) {
     static struct sensors_ ref_previous;
     int setpoint_value_inner = 21500;
     int setpoint_value_outer = 5000;
@@ -79,7 +75,7 @@ int get_offset(struct sensors_ *ref_readings)
     }
     
     if (line_lost) {
-        if(line_lost_direction){
+        if(line_lost_direction) {
             return 255;
         } else {
             return -255;
@@ -91,20 +87,18 @@ int get_offset(struct sensors_ *ref_readings)
     return (delta_r1 + delta_l1 + delta_r2 + delta_l2 + delta_r3 + delta_l3) / 180;
 }
 
-int is_following_line()
-{
-    if (!line_lost){
+int is_following_line() {
+    if (!line_lost) {
      return 0;
     } else {
-        if (line_lost_direction){
+        if (line_lost_direction) {
             return 1;
         } else {
             return -1;
         }
     }
 }
-int get_offset_change(struct sensors_ *ref_readings)
-{
+int get_offset_change(struct sensors_ *ref_readings) {
     
     static int previous_offset;
     

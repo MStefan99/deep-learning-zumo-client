@@ -13,8 +13,7 @@
 #include <project.h>
 
 
-float battery_voltage()
-{
+float battery_voltage() {
     float result = 0;
     const float battery_voltage_convertion_coeffitient = 1.5;
     const float level_convert_coefficient = 5.0/4095.0;
@@ -27,8 +26,7 @@ float battery_voltage()
     return result;
 }
 
-bool voltage_test()
-{
+bool voltage_test() {
     float voltage = battery_voltage();
         
     if (voltage > 3.8) {
