@@ -12,21 +12,22 @@
 
 #include "movement.h"
 
-const float p_coefficient = 2.5;
-const float d_coefficient = 4;
-state robot_state = {0, 0, forward};
+const float p_coefficient = 1.5;
+state robot_state = {3, 10, forward};
 
 
-void motor_tank_turn(direction dir, uint8_t speed, float delay) {
-    MotorDirLeft_Write(dir > 2);
-    MotorDirRight_Write(dir < 2);
+void motor_tank_turn(int side, uint8_t speed) {
+    MotorDirLeft_Write(!side);
+    MotorDirRight_Write(side);
     PWM_WriteCompare1(speed); 
     PWM_WriteCompare2(speed);
-    
-    vTaskDelay(delay);
-    
+}
+
+void reset() {
     MotorDirLeft_Write(0);
     MotorDirRight_Write(0);
+    PWM_WriteCompare1(0); 
+    PWM_WriteCompare2(0);
 }
 
 
@@ -63,9 +64,24 @@ void move_to_next_intersection(uint8_t speed) {
             PWM_WriteCompare1(speed); 
             PWM_WriteCompare2(speed);
         }
+        PWM_WriteCompare1(speed); 
+        PWM_WriteCompare2(speed);
+        vTaskDelay(50);
+        reset();
         
-        PWM_WriteCompare1(0);
-        PWM_WriteCompare2(0);
+        if (robot_state.dir % 2) {
+            if (robot_state.dir / 2) {
+                --robot_state.x;
+            } else {
+                ++robot_state.x;
+            }
+        } else {
+            if (robot_state.dir / 2) {
+                ++robot_state.y;
+            } else {
+                --robot_state.y;
+            }
+        }
     }
 }
 
@@ -75,15 +91,45 @@ int motor_enabled() {
 }
 
 
+void rotate_next(int side, uint8_t speed) {
+    if (motor_enabled()) {
+        motor_tank_turn(side, speed);
+        vTaskDelay(100);
+        
+        for (int i = 0; i < 2; ++i) {
+            while (!line_centered()) {
+                motor_tank_turn(side, speed);
+            }
+            while (line_centered()) {
+                motor_tank_turn(side, speed);
+            }
+        }
+        reset();
+    }
+}
+
+
 void rotate(direction dir, uint8_t speed) {
     if (motor_enabled()) {
-        PWM_WriteCompare1(speed); 
-        PWM_WriteCompare2(speed);
-        vTaskDelay(100);
-        motor_tank_turn(dir, speed, 500);
-        while (!line_centered()) {
-            motor_tank_turn(dir, speed, 1);
+        int n = (dir % 2) ^ (robot_state.dir % 2);
+        if (!n && dir != robot_state.dir) {
+            n = 2;
         }
+        int side = dir - robot_state.dir;
+        if (dir == 0 && robot_state.dir == 3) {
+            side = 1;
+        } else if (dir == 3 && robot_state.dir == 0) {
+            side = 0;
+        }
+        if (side < 0) {
+            side = 0;    
+        } else if (side > 1) {
+            side = 1;
+        }
+        for (int i = 0; i < n; ++i) {
+            rotate_next(side, speed);
+        }
+        robot_state.dir = dir;
     }
 }
 

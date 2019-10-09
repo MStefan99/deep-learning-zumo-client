@@ -35,11 +35,7 @@ int intersection_detected() {
 
 
 int line_centered() {
-    struct sensors_ ref;
-    const uint16_t threshold = 2000;
-    
-    reflectance_read(&ref);
-    return abs(ref.l1 - ref.r1) < threshold;
+    return abs(get_line_pos()) < 10;
 }
 
 

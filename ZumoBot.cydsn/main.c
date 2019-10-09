@@ -67,11 +67,13 @@ int zmain(void) {
             move_to_next_intersection(speed);
             rotate(left, speed);
             move_to_next_intersection(speed);
-            rotate(right, speed);
+            rotate(forward, speed);
             move_to_next_intersection(speed);
             rotate(right, speed);
             move_to_next_intersection(speed);
-            rotate(left, speed);
+            rotate(forward, speed);
+            move_to_next_intersection(speed);
+            rotate(backward, speed);
             move_to_next_intersection(speed);
             set_motor_state(0);
         }
