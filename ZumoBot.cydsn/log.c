@@ -21,8 +21,9 @@ list new_list() {
 }
 
 
-element *list_alloc_element(char *str, element *prev, element *next) {
+element *list_alloc_element(element *prev, element *next, const void *content, size_t size) {
     element *e = malloc(sizeof(element));
+    void *c = malloc(size);
     if (!e) {
         return NULL;
     }
@@ -38,13 +39,14 @@ element *list_alloc_element(char *str, element *prev, element *next) {
         e->next = NULL;
     }
 
-    strcpy(e->str, str);
+    memcpy(c, content, size);
+    e->content = c;
     return e;
 }
 
 
-int list_append(list *l, char *str) {
-    element *e = list_alloc_element(str, l->last, NULL);
+int list_append(list *l, const void *content, size_t size) {
+    element *e = list_alloc_element(l->last, NULL, content, size);
     if (!e) {
         return 1;
     }
@@ -63,30 +65,10 @@ int list_append(list *l, char *str) {
 }
 
 
-int list_appendLeft(list *l, char *str) {
-    element *e = list_alloc_element(str, NULL, l->first);
-    if (!e) {
-        return 1;
-    }
-
-    if (!l->last) {
-        l->last = e;
-    }
-
-    if (l->first) {
-        l->first->prev = e;
-    }
-
-    l->first = e;
-    ++l->e_count;
-    return 0;
-}
-
-
-int list_pop(list *l, char *str) {
+int list_pop(list *l, void *content, size_t size) {
     element *e = l->last;
     if (e) {
-        strcpy(str, e->str);
+        memcpy(content, e->content, size);
 
         if (e->prev) {
             e->prev->next = NULL;
@@ -94,26 +76,9 @@ int list_pop(list *l, char *str) {
             l->first = NULL;
         }
         l->last = e->prev;
-        free(e);
-        return 0;
-    } else {
-        return 1;
-    }
-}
 
-
-int list_popLeft(list *l, char *str) {
-    element *e = l->first;
-    if (e) {
-        strcpy(str, e->str);
-
-        if (e->next) {
-            e->next->prev = NULL;
-        } else {
-            l->last = NULL;
-        }
-
-        l->first = e->next;
+        --l->e_count;
+        free(e->content);
         free(e);
         return 0;
     } else {
@@ -129,6 +94,7 @@ void list_wipe(list *l) {
     while (p) {
         t = p;
         p = p->next;
+        free(t->content);
         free(t);
     }
 
@@ -143,16 +109,15 @@ int list_get_size(list l) {
 }
 
 
-void list_printAll(list l) {
+void list_print_all(list l, void (*print_element)(const void *)) {
     int i = 0;
     if (!l.first) {
         print_mqtt("Zumo/log", "List empty");
     } else {
-        print_mqtt("Zumo/log", "=== LOG START ===");
+        print_mqtt("Zumo/log", "List elements:");
         for (element *p = l.first; p; p = p->next, i++) {
-            print_mqtt("Zumo/log", "Entry %i is \"%s\"", i + 1, p->str);
+            print_element(p->content);
         }
-        print_mqtt("Zumo/log", "=== LOG END ===");
     }
 }
 

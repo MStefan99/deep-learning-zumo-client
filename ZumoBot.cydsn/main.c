@@ -28,10 +28,10 @@ volatile bool calibration_done = false;
 
 
 CY_ISR_PROTO(Button_Interrupt);
+void print_element(const void *element);
 
 
 int zmain(void) {   
-    list log = new_list(); 
     bool low_voltage_detected = false;
     
     CyGlobalIntEnable; /* Enable global interrupts. */
@@ -76,6 +76,11 @@ int zmain(void) {
             set_motor_state(0);
         }
     }
+}
+
+
+void print_element(const void *element) {
+    
 }
 
 
