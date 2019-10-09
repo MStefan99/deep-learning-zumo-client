@@ -93,11 +93,4 @@ int get_line_pos() {
 }
 
 
-int get_line_pos_change() {
-    int prev = get_line_pos();
-    int current = get_line_pos();
-    return current - prev;
-}
-
-
 /* [] END OF FILE */

@@ -55,7 +55,7 @@ void move_to_next_intersection(uint8_t speed) {
     int shift_correction;
     if (motor_enabled()) {
         while (!intersection_detected()) {
-            shift_correction = get_line_pos() * p_coefficient + get_line_pos_change() * d_coefficient;
+            shift_correction = get_line_pos() * p_coefficient;
             motor_turn_diff(speed, shift_correction);
         }
         

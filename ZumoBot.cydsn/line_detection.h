@@ -31,7 +31,6 @@
     void calibrate();
     void reflectance_normalize(sensors *ref, ref_offset off); 
     int get_line_pos();
-    int get_line_pos_change();
     int intersection_detected();
     int line_centered();
     
