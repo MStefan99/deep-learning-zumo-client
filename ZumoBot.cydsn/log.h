@@ -19,7 +19,7 @@
 
 
     typedef struct node_ {
-        char *content;
+        void *content;
         struct node_ *next;
         struct node_ *prev;
     } element;
