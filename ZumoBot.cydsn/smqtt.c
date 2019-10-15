@@ -14,8 +14,15 @@
 
 
 #define MAX_MESSAGE_COUNT 16
+typedef struct {
+    int sub;
+    char topic[MESSAGE_SIZE];
+} sub_entry;
+
+
 static QueueHandle_t in_q;
 static QueueHandle_t out_q;
+static QueueHandle_t sub_q;
 MQTTClient client;
 Network network;
 
@@ -42,6 +49,7 @@ void SMQTTReceive(MessageData *msg) {
 void SMQTTQueueInit() {
     in_q = xQueueCreate(MAX_MESSAGE_COUNT, sizeof(mqtt_message));
     out_q = xQueueCreate(MAX_MESSAGE_COUNT, sizeof(mqtt_message));
+    sub_q = xQueueCreate(MAX_MESSAGE_COUNT, sizeof(sub_entry));
 }
 
 
@@ -71,6 +79,7 @@ void SMQTTTask() {
 		printf("MQTT Connected\n");
     
     while (1) {
+        sub_entry s;
         MQTTMessage buf_m;
         buf_m.qos = QOS0;
         buf_m.retained = 0;
@@ -80,6 +89,14 @@ void SMQTTTask() {
             buf_m.payloadlen = strlen(buf_out.message);
             
             MQTTPublish(&client, buf_out.topic, &buf_m);
+        }
+        
+        if (xQueueReceive(sub_q, (void *)&s, 0) == pdTRUE) {
+            if (s.sub) {
+                MQTTSubscribe(&client, s.topic, 2, SMQTTReceive);
+            } else {
+                MQTTUnsubscribe(&client, s.topic);
+            }
         }
     }
 }
@@ -102,20 +119,18 @@ int mqtt_print(char *topic, char *format, ...) {
 
 
 int mqtt_sub(char *topicFilter) {
-    if (MQTTIsConnected(&client)) {
-        return MQTTSubscribe(&client, topicFilter, 2, SMQTTReceive);
-    } else {
-        return 0;
-    }
+    sub_entry s;
+    s.sub = 1;
+    strcpy(s.topic, topicFilter);
+    return xQueueSendToBack(sub_q, (void *)&s, 0);
 }
 
 
 int mqtt_unsub(char *topicFilter) {
-    if (MQTTIsConnected(&client)) {
-        return MQTTUnsubscribe(&client, topicFilter);
-    } else {
-        return 0;
-    }
+    sub_entry s;
+    s.sub = 0;
+    strcpy(s.topic, topicFilter);
+    return xQueueSendToBack(sub_q, (void *)&s, 0);
 }
 
 

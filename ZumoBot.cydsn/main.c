@@ -44,6 +44,7 @@ int zmain(void) {
     ADC_Battery_StartConvert();
     IR_Start();
     mqtt_print("Zumo/ready", "Zumo setup done");
+    mqtt_sub("test/#");
     
     while (1) {  
         if (!voltage_test() && !low_voltage_detected) {
@@ -63,12 +64,11 @@ int zmain(void) {
             calibration_done = true;
         } 
         
-        mqtt_sub("test/#");
         mqtt_print("test/testing", "this will be received");
         mqtt_print("testing/test", "this will not");
         
         mqtt_message msg;
-        if (mqtt_receive(&msg)) {
+        while (mqtt_receive(&msg)) {
             printf("Received message on topic \"%s\": \"%s\"\n", msg.topic, msg.message);
         }
         vTaskDelay(2000);
