@@ -76,10 +76,9 @@ int main( void )
 	/* Start tasks. */
   	//( void ) xTaskCreate( DebugUartTask, "DbgUart", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
   	//( void ) xTaskCreate( DebugCommandTask, "DbgCmd", configMINIMAL_STACK_SIZE * 3, NULL, tskIDLE_PRIORITY + 1, NULL );
-  	( void ) xTaskCreate( start_zmain, "Zumo", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL );
+  	xTaskCreate( start_zmain, "Zumo", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL );
 #if START_MQTT == 1
-    ( void ) xTaskCreate( SMQTTInit, "SMQTTInit", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL );
-    ( void ) xTaskCreate( SMQTTTask, "SMQTTTASK", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL );
+    xTaskCreate( SMQTTTask, "SMQTTTASK", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY, NULL );
 #endif    
     
 	/* Will only get here if there was insufficient memory to create the idle

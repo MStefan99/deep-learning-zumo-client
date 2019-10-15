@@ -17,47 +17,38 @@
 #define BUFFER_SIZE 80
 static QueueHandle_t in_q;
 static QueueHandle_t out_q;
-static MQTTClient client;
-static Network network;
+MQTTClient client;
+Network network;
 
 mqtt_message buf_out;
 mqtt_message buf_in;
 
 
 void SMQTTReceive(MessageData *msg) {
-    printf("Setting up MQTT message queue.\n");
+    uint8_t i;
+    for (i = 0; i < msg->topicName->lenstring.len; ++i) {
+        buf_in.topic[i] = msg->topicName->lenstring.data[i];
+    }
+    buf_in.topic[i] = 0;
     
-    strcpy(buf_in.topic, msg->topicName->cstring);
-    strcpy(buf_in.message, msg->message->payload);
+    for (i = 0; i < msg->message->payloadlen; ++i) {
+        buf_in.message[i] = ((char *)msg->message->payload)[i];
+    }
+    buf_in.message[i] = 0;
+    
+    printf("Received message on topic \"%s\": \"%s\"\n", buf_in.topic, buf_in.message);
     xQueueSendToBack(in_q, &buf_in, 0);
 }
 
 
 void SMQTTQueueInit() {
+    printf("Setting up MQTT message queue.\n");
     in_q = xQueueCreate(MAX_MESSAGE_COUNT, sizeof(mqtt_message));
     out_q = xQueueCreate(MAX_MESSAGE_COUNT, sizeof(mqtt_message));
 }
 
 
 void SMQTTTask() {
-    printf("SMQTT Task started\n");
-    
-    while (1) {
-        MQTTMessage buf_m;
-        buf_m.qos = QOS0;
-        buf_m.retained = 0;
-        
-        if (xQueueReceive(out_q, (void *)&buf_out, 0) == pdTRUE) {
-            buf_m.payload = buf_out.message;
-            buf_m.payloadlen = strlen(buf_out.message);
-            
-            MQTTPublish(&client, buf_out.topic, &buf_m);
-        }
-    }
-}
-
-
-void SMQTTInit() {
     printf("Starting MQTT\n");
     MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
     unsigned char sendbuf[128], readbuf[128];
@@ -90,6 +81,20 @@ void SMQTTInit() {
     else {
         printf("MQTT Subscribed\n");
     } 
+    printf("SMQTT Task started\n");
+    
+    while (1) {
+        MQTTMessage buf_m;
+        buf_m.qos = QOS0;
+        buf_m.retained = 0;
+        
+        if (xQueueReceive(out_q, (void *)&buf_out, 0) == pdTRUE) {
+            buf_m.payload = buf_out.message;
+            buf_m.payloadlen = strlen(buf_out.message);
+            
+            MQTTPublish(&client, buf_out.topic, &buf_m);
+        }
+    }
 }
 
 
