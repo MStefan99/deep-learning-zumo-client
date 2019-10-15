@@ -39,6 +39,7 @@
 #include "debug_uart.h"
 #include "mqtt_sender.h"
 #include "zumo_config.h"
+#include "mqtt_receiver.h"
 
 #ifndef START_MQTT
 #define START_MQTT 0
@@ -78,7 +79,8 @@ int main( void )
   	//( void ) xTaskCreate( DebugCommandTask, "DbgCmd", configMINIMAL_STACK_SIZE * 3, NULL, tskIDLE_PRIORITY + 1, NULL );
   	( void ) xTaskCreate( start_zmain, "Zumo", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL );
 #if START_MQTT == 1   
-  	( void ) xTaskCreate( MQTTSendTask, "MQTT_send", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL );
+  	//( void ) xTaskCreate( MQTTSendTask, "MQTT_send", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL );
+    ( void ) xTaskCreate( MQTTReceiveTask, "MQTT_receive", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL );
 #endif    
     
 	/* Will only get here if there was insufficient memory to create the idle

@@ -20,6 +20,7 @@
 #include "line_detection.h"
 #include "log.h"
 #include "movement.h"
+#include "mqtt_receiver.h"
 
 
 static uint8_t speed = 100;
