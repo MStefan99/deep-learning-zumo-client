@@ -10,8 +10,9 @@
  * ========================================
 */
 
-#ifndef MQTT_RECEIVER_
-    #define MQTT_RECEIVER_
+#ifndef SMQTT
+    #define SMQTT
+    
     #include "MQTTFreeRTOS.h"
     #include "FreeRTOS.h"
     #include "task.h"
@@ -19,15 +20,25 @@
 
     #include "MQTTClient.h"
     #include "zumo_config.h"
+    #include <stdio.h>
+    
+    #define MAX_LEN 32
+    
     
     typedef struct {
-        const char *topic;
-        char *message;
+        char topic[MAX_LEN];
+        char message[MAX_LEN];
     } mqtt_message;
     
     
-    void handler(MessageData *msg);
-    void MQTTReceiveTask();
+    void SMQTTReceive(MessageData *msg);
+    void SMQTTQueueInit();
+    void SMQTTTask();
+    void SMQTTInit();
+    void mqtt_send(mqtt_message msg);
+    void mqtt_receive(mqtt_message *msg);
+    
+    
     
     #endif
 

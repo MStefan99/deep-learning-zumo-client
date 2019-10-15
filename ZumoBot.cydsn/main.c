@@ -11,7 +11,6 @@
 #include "LSM303D.h"
 #include "IR.h"
 #include "Beep.h"
-#include "mqtt_sender.h"
 #include <time.h>
 #include <sys/time.h>
 #include "serial1.h"
@@ -20,7 +19,7 @@
 #include "line_detection.h"
 #include "log.h"
 #include "movement.h"
-#include "mqtt_receiver.h"
+#include "smqtt.h"
 
 
 static uint8_t speed = 100;
@@ -46,7 +45,7 @@ int zmain(void) {
     IR_Start();
     print_mqtt("Zumo/ready", "Zumo setup done");
     
-    for (;;) {  
+    while (1) {  
         if (!voltage_test() && !low_voltage_detected) {
             print_mqtt("Zumo/WARNING", "Low voltage!");
             low_voltage_detected = true;
@@ -64,20 +63,10 @@ int zmain(void) {
             calibration_done = true;
         } 
         
-        if (motor_enabled()) {
-            move_to_next_intersection(speed);
-            rotate(left, speed);
-            move_to_next_intersection(speed);
-            rotate(forward, speed);
-            move_to_next_intersection(speed);
-            rotate(right, speed);
-            move_to_next_intersection(speed);
-            rotate(forward, speed);
-            move_to_next_intersection(speed);
-            rotate(backward, speed);
-            move_to_next_intersection(speed);
-            set_motor_state(0);
-        }
+        printf("Sending message...\n");
+        mqtt_message msg = {"test", "testtest"};
+        mqtt_send(msg);
+        vTaskDelay(2000);
     }
 }
 
