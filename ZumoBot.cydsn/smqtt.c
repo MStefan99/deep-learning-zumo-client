@@ -14,7 +14,6 @@
 
 
 #define MAX_MESSAGE_COUNT 16
-#define BUFFER_SIZE 80
 static QueueHandle_t in_q;
 static QueueHandle_t out_q;
 MQTTClient client;
@@ -36,20 +35,17 @@ void SMQTTReceive(MessageData *msg) {
     }
     buf_in.message[i] = 0;
     
-    printf("Received message on topic \"%s\": \"%s\"\n", buf_in.topic, buf_in.message);
     xQueueSendToBack(in_q, &buf_in, 0);
 }
 
 
 void SMQTTQueueInit() {
-    printf("Setting up MQTT message queue.\n");
     in_q = xQueueCreate(MAX_MESSAGE_COUNT, sizeof(mqtt_message));
     out_q = xQueueCreate(MAX_MESSAGE_COUNT, sizeof(mqtt_message));
 }
 
 
 void SMQTTTask() {
-    printf("Starting MQTT\n");
     MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
     unsigned char sendbuf[128], readbuf[128];
     int rc = 0;
@@ -57,9 +53,7 @@ void SMQTTTask() {
 	connectData.clientID.cstring = MQTT_CLIENT_ID;
     char* address = MQTT_BROKER;
     
-    printf("Connectig to network\n");
     NetworkInit(&network, NETWORK_SSID, NETWORK_PASSWORD);
-    printf("Setting up MQTT client\n");
 	MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
     
 	if ((rc = NetworkConnect(&network, address, 1883)) != 0)
@@ -76,13 +70,6 @@ void SMQTTTask() {
 	else
 		printf("MQTT Connected\n");
     
-    if ((rc = MQTTSubscribe(&client, "#", 2, SMQTTReceive)) != 0)
-		printf("Return code from MQTT subscribe is %d\n", rc);
-    else {
-        printf("MQTT Subscribed\n");
-    } 
-    printf("SMQTT Task started\n");
-    
     while (1) {
         MQTTMessage buf_m;
         buf_m.qos = QOS0;
@@ -98,17 +85,50 @@ void SMQTTTask() {
 }
 
 
+int mqtt_print(char *topic, char *format, ...) {
+    va_list va;
+    char buf[MESSAGE_SIZE];
+    
+    va_start(va, format);
+    int n = vsnprintf(buf, MESSAGE_SIZE, format, va);
+    va_end(va);
+    mqtt_message msg;
+    strcpy(msg.topic, topic);
+    strcpy(msg.message, buf);
+    
+    mqtt_send(msg);
+    return n;
+}
+
+
+int mqtt_sub(char *topicFilter) {
+    if (MQTTIsConnected(&client)) {
+        return MQTTSubscribe(&client, topicFilter, 2, SMQTTReceive);
+    } else {
+        return 0;
+    }
+}
+
+
+int mqtt_unsub(char *topicFilter) {
+    if (MQTTIsConnected(&client)) {
+        return MQTTUnsubscribe(&client, topicFilter);
+    } else {
+        return 0;
+    }
+}
+
+
 void mqtt_send(mqtt_message msg) {
-    printf("Adding message to queue\n");
     xQueueSendToBack(out_q, (void *)&msg, 0);
 }
 
 
-void mqtt_receive(mqtt_message *msg) {
-    printf("Receiving message from queue\n");
-    if ( xQueueReceive(in_q, &msg, 0) != pdTRUE) {
-        msg = NULL;
+int mqtt_receive(mqtt_message *msg) {
+    if (xQueueReceive(in_q, msg, 10) != pdTRUE) {
+        return 0;
     }
+    return 1;
 }
 
 

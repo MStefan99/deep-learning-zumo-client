@@ -20,25 +20,28 @@
 
     #include "MQTTClient.h"
     #include "zumo_config.h"
+    #include "stdarg.h"
     #include <stdio.h>
     
-    #define MAX_LEN 32
+    #define MESSAGE_SIZE 32
     
     
     typedef struct {
-        char topic[MAX_LEN];
-        char message[MAX_LEN];
+        char topic[MESSAGE_SIZE];
+        char message[MESSAGE_SIZE];
     } mqtt_message;
+    
+    
+    int mqtt_print(char *topic, char *format, ...);
+    int mqtt_sub(char *topicFilter);
+    int mqtt_receive(mqtt_message *msg);
+    int mqtt_unsub(char *topicFilter);
     
     
     void SMQTTReceive(MessageData *msg);
     void SMQTTQueueInit();
     void SMQTTTask();
-    void SMQTTInit();
     void mqtt_send(mqtt_message msg);
-    void mqtt_receive(mqtt_message *msg);
-    
-    
     
     #endif
 
