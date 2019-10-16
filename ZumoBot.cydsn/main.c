@@ -1,39 +1,7 @@
-#include <project.h>
-#include <stdio.h>
-#include "FreeRTOS.h"
-#include "task.h"
-#include "Motor.h"
-#include "Ultra.h"
-#include "Nunchuk.h"
-#include "Reflectance.h"
-#include "Gyro.h"
-#include "Accel_magnet.h"
-#include "LSM303D.h"
-#include "IR.h"
-#include "Beep.h"
-#include <time.h>
-#include <sys/time.h>
-#include "serial1.h"
-#include <unistd.h>
-#include "voltage.h"
-#include "line_detection.h"
-#include "log.h"
-#include "movement.h"
-#include "smqtt.h"
+#include "main.h"
 
 
-static uint8_t speed = 100;
-volatile bool calibration_mode = false;
-volatile bool calibration_done = false;
-
-
-CY_ISR_PROTO(Button_Interrupt);
-void print_element(const void *element);
-
-
-int zmain(void) {   
-    bool low_voltage_detected = false;
-    
+int zmain(void) {
     CyGlobalIntEnable;  // Enable global interrupts.
     Button_isr_StartEx(Button_Interrupt);  // Link button interrupt to isr
     
@@ -47,6 +15,7 @@ int zmain(void) {
     mqtt_sub("test/#");
     
     while (1) {  
+        t = xTaskGetTickCount();
         if (!voltage_test() && !low_voltage_detected) {
             mqtt_print("Zumo/WARNING", "Low voltage!");
             low_voltage_detected = true;
@@ -68,10 +37,7 @@ int zmain(void) {
         mqtt_print("testing/test", "this will not");
         
         mqtt_message msg;
-        while (mqtt_receive(&msg)) {
-            printf("Received message on topic \"%s\": \"%s\"\n", msg.topic, msg.message);
         }
-        vTaskDelay(2000);
     }
 }
 
