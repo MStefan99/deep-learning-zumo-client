@@ -11,7 +11,6 @@
 #include "LSM303D.h"
 #include "IR.h"
 #include "Beep.h"
-#include "mqtt_sender.h"
 #include <time.h>
 #include <sys/time.h>
 #include "serial1.h"
@@ -20,6 +19,7 @@
 #include "line_detection.h"
 #include "log.h"
 #include "movement.h"
+#include "smqtt.h"
 
 
 static uint8_t speed = 100;
@@ -34,8 +34,8 @@ void print_element(const void *element);
 int zmain(void) {   
     bool low_voltage_detected = false;
     
-    CyGlobalIntEnable; /* Enable global interrupts. */
-    Button_isr_StartEx(Button_Interrupt); // Link button interrupt to isr
+    CyGlobalIntEnable;  // Enable global interrupts.
+    Button_isr_StartEx(Button_Interrupt);  // Link button interrupt to isr
     
     reflectance_start();
     UART_1_Start(); 
@@ -43,16 +43,17 @@ int zmain(void) {
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     IR_Start();
-    print_mqtt("Zumo/ready", "Zumo setup done");
+    mqtt_print("Zumo/ready", "Zumo setup done");
+    mqtt_sub("test/#");
     
-    for (;;) {  
+    while (1) {  
         if (!voltage_test() && !low_voltage_detected) {
-            print_mqtt("Zumo/WARNING", "Low voltage!");
+            mqtt_print("Zumo/WARNING", "Low voltage!");
             low_voltage_detected = true;
             PWM_Stop();
             vTaskDelay(10000);
         } else if (voltage_test() && low_voltage_detected) {
-            print_mqtt("Zumo/DEBUG", "Voltage normal");
+            mqtt_print("Zumo/DEBUG", "Voltage normal");
             low_voltage_detected = false;
             PWM_Start();
         }
@@ -63,20 +64,14 @@ int zmain(void) {
             calibration_done = true;
         } 
         
-        if (motor_enabled()) {
-            move_to_next_intersection(speed);
-            rotate(left, speed);
-            move_to_next_intersection(speed);
-            rotate(forward, speed);
-            move_to_next_intersection(speed);
-            rotate(right, speed);
-            move_to_next_intersection(speed);
-            rotate(forward, speed);
-            move_to_next_intersection(speed);
-            rotate(backward, speed);
-            move_to_next_intersection(speed);
-            set_motor_state(0);
+        mqtt_print("test/testing", "this will be received");
+        mqtt_print("testing/test", "this will not");
+        
+        mqtt_message msg;
+        while (mqtt_receive(&msg)) {
+            printf("Received message on topic \"%s\": \"%s\"\n", msg.topic, msg.message);
         }
+        vTaskDelay(2000);
     }
 }
 
