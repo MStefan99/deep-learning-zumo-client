@@ -41,10 +41,11 @@
     volatile bool calibration_mode = false;
     volatile bool calibration_done = false;
     bool low_voltage_detected = false;
-    bool net_ready = false;
     static uint8_t speed = 100;
     TickType_t t = 0;
     mqtt_message msg = {"", ""};
+    state robot_state = {3, 10, forward};
+    int action = 0;
 
 
     CY_ISR_PROTO(Button_Interrupt);

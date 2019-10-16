@@ -10,9 +10,10 @@ int zmain(void) {
     Ultra_Start();
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
-    IR_Start();
-    mqtt_print("Zumo/ready", "Zumo setup done");
-    mqtt_sub("test/#");
+    
+    mqtt_sub("Net/#");
+    printf("Sending start confirmation\n");
+    mqtt_print("Zumo/Start", "Start");
     
     while (1) {  
         t = xTaskGetTickCount();
@@ -31,12 +32,30 @@ int zmain(void) {
             calibrate();
             calibration_mode = false;
             calibration_done = true;
-        } 
+        }
         
-        mqtt_print("test/testing", "this will be received");
-        mqtt_print("testing/test", "this will not");
-        
-        mqtt_message msg;
+        if (motor_enabled()) {
+            if (mqtt_receive(&msg)) {
+                if (strstr(msg.topic, "Net/Status")) {
+                    if (strstr(msg.message, "Ready")) {
+                        printf("Received net ready confirmation, resending start confirmation\n");
+                        mqtt_print("Zumo/Start", "Start");
+                    } else if (strstr(msg.message, "Finish")) {
+                        printf("Received finish confirmation, disabling motors\n");
+                        set_motor_state(0);
+                    } else if (strstr(msg.message, "Stuck")) {
+                        printf("Received stuck confirmation, disabling motors\n");
+                        set_motor_state(0);
+                    }
+                  
+                } else if (strstr(msg.topic, "Net/Action")) {
+                    sscanf(msg.message, "%i", &action);
+                    printf("Received an order to execute action %i\n", action);
+                    rotate(&robot_state, action, speed);
+                    move_to_next_intersection(&robot_state, speed);
+                    mqtt_print("Zumo/Move", "%i", t);
+                }
+            }
         }
     }
 }
