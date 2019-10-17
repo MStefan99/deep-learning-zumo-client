@@ -13,7 +13,6 @@
 #include "movement.h"
 
 const float p_coefficient = 1.5;
-state robot_state = {3, 10, forward};
 
 
 void motor_tank_turn(int side, uint8_t speed) {
@@ -22,6 +21,7 @@ void motor_tank_turn(int side, uint8_t speed) {
     PWM_WriteCompare1(speed); 
     PWM_WriteCompare2(speed);
 }
+
 
 void reset() {
     MotorDirLeft_Write(0);
@@ -52,7 +52,7 @@ void motor_turn_diff(uint8_t speed, int diff) {
 }
 
 
-void move_to_next_intersection(uint8_t speed) {
+void move_to_next_intersection(state *robot_state, uint8_t speed) {
     int shift_correction;
     if (motor_enabled()) {
         while (!intersection_detected()) {
@@ -69,17 +69,17 @@ void move_to_next_intersection(uint8_t speed) {
         vTaskDelay(50);
         reset();
         
-        if (robot_state.dir % 2) {
-            if (robot_state.dir / 2) {
-                --robot_state.x;
+        if (robot_state->dir % 2) {
+            if (robot_state->dir / 2) {
+                --robot_state->x;
             } else {
-                ++robot_state.x;
+                ++robot_state->x;
             }
         } else {
-            if (robot_state.dir / 2) {
-                ++robot_state.y;
+            if (robot_state->dir / 2) {
+                ++robot_state->y;
             } else {
-                --robot_state.y;
+                --robot_state->y;
             }
         }
     }
@@ -109,16 +109,16 @@ void rotate_next(int side, uint8_t speed) {
 }
 
 
-void rotate(direction dir, uint8_t speed) {
+void rotate(state *robot_state, direction dir, uint8_t speed) {
     if (motor_enabled()) {
-        int n = (dir % 2) ^ (robot_state.dir % 2);
-        if (!n && dir != robot_state.dir) {
+        int n = (dir % 2) ^ (robot_state->dir % 2);
+        if (!n && dir != robot_state->dir) {
             n = 2;
         }
-        int side = dir - robot_state.dir;
-        if (dir == 0 && robot_state.dir == 3) {
+        int side = dir - robot_state->dir;
+        if (dir == 0 && robot_state->dir == 3) {
             side = 1;
-        } else if (dir == 3 && robot_state.dir == 0) {
+        } else if (dir == 3 && robot_state->dir == 0) {
             side = 0;
         }
         if (side < 0) {
@@ -129,7 +129,7 @@ void rotate(direction dir, uint8_t speed) {
         for (int i = 0; i < n; ++i) {
             rotate_next(side, speed);
         }
-        robot_state.dir = dir;
+        robot_state->dir = dir;
     }
 }
 

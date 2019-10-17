@@ -16,9 +16,9 @@
 ref_offset offset = {0, 0, 0};
 
 
-void ref_read_normalized(sensors *ref, ref_offset off) {
+void ref_read_normalized(sensors *ref) {
     reflectance_read(ref);
-    reflectance_normalize(ref, off);
+    reflectance_normalize(ref);
 }
 
 
@@ -49,17 +49,17 @@ ref_offset ref_get_offset(sensors ref_readings) {
 }
 
 
-void calibrate(ref_offset *off) {
+void calibrate() {
     sensors values;
     reflectance_read(&values);
-    *off = ref_get_offset(values);
+    offset = ref_get_offset(values);
 }
 
 
-void reflectance_normalize(sensors *ref, ref_offset off) {
-    ref->r1 -= off.inner;
-    ref->r2 -= off.mid;
-    ref->r3 -= off.outer;
+void reflectance_normalize(sensors *ref) {
+    ref->r1 -= offset.inner;
+    ref->r2 -= offset.mid;
+    ref->r3 -= offset.outer;
 }
 
 
