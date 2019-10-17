@@ -13,6 +13,12 @@
 #include "movement.h"
 
 const float p_coefficient = 1.5;
+state robot_state = {3, 10, 0};
+
+
+void send_coords() {
+    mqtt_print("Zumo/Coords", "(%i, %i)", robot_state.x, robot_state.y);
+}
 
 
 void motor_tank_turn(int side, uint8_t speed) {
@@ -52,7 +58,7 @@ void motor_turn_diff(uint8_t speed, int diff) {
 }
 
 
-void move_to_next_intersection(state *robot_state, uint8_t speed) {
+void move_to_next_intersection(uint8_t speed) {
     if (MOVEMENT_ENABLED) {
         int shift_correction;
         
@@ -70,20 +76,24 @@ void move_to_next_intersection(state *robot_state, uint8_t speed) {
         vTaskDelay(50);
         motor_reset();
         
-        if (robot_state->dir % 2) {
-            if (robot_state->dir / 2) {
-                --robot_state->x;
-            } else {
-                ++robot_state->x;
-            }
-        } else {
-            if (robot_state->dir / 2) {
-                ++robot_state->y;
-            } else {
-                --robot_state->y;
-            }
+        switch (robot_state.dir) {
+            case 0:
+                --robot_state.y;
+            break;
+            
+            case 1:
+                ++robot_state.x;
+            break;
+            
+            case 2:
+                ++robot_state.y;
+            break;
+            
+            case 3:
+                --robot_state.x;
+            break;
         }
-        mqtt_print("Zumo/Pos", "(%i, %i)", robot_state->x, robot_state->y);
+        printf("Moved, state %i %i %i\n", robot_state.x, robot_state.y, robot_state.dir);
     }
 }
 
@@ -93,7 +103,7 @@ int motor_enabled() {
 }
 
 
-void rotate_next(int side, uint8_t speed) {
+void motor_rotate_next(int side, uint8_t speed) {
     if (MOVEMENT_ENABLED) {
         motor_tank_turn(side, speed);
         vTaskDelay(100);
@@ -111,16 +121,17 @@ void rotate_next(int side, uint8_t speed) {
 }
 
 
-void rotate(state *robot_state, direction dir, uint8_t speed) {
+void rotate_and_center(int dir, uint8_t speed) {
     if (MOVEMENT_ENABLED) {
-        int n = (dir % 2) ^ (robot_state->dir % 2);
-        if (!n && dir != robot_state->dir) {
+        printf("Rotating. Current %i, dest %i\n", robot_state.dir, dir);
+        int n = (dir % 2) ^ (robot_state.dir % 2);
+        if (!n && dir != robot_state.dir) {
             n = 2;
         }
-        int side = dir - robot_state->dir;
-        if (dir == 0 && robot_state->dir == 3) {
+        int side = dir - robot_state.dir;
+        if (dir == 0 && robot_state.dir == 3) {
             side = 1;
-        } else if (dir == 3 && robot_state->dir == 0) {
+        } else if (dir == 3 && robot_state.dir == 0) {
             side = 0;
         }
         if (side < 0) {
@@ -129,9 +140,10 @@ void rotate(state *robot_state, direction dir, uint8_t speed) {
             side = 1;
         }
         for (int i = 0; i < n; ++i) {
-            rotate_next(side, speed);
+            printf("Rotating, side %i\n", side);
+            motor_rotate_next(side, speed);
         }
-        robot_state->dir = dir;
+        robot_state.dir = dir;
     }
 }
 

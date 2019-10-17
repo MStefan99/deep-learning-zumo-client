@@ -19,6 +19,7 @@
     #include "FreeRTOS.h"
     #include "task.h"
     #include "stat.h"
+    #include "smqtt.h"
     
     typedef struct {
         int x;
@@ -29,8 +30,9 @@
     extern state robot_state;
     
     
-    void pre_scan();
+    void pre_scan(uint8_t speed);
     tile scan();
+    void send_obstacle(tile t);
     void measure_distance(double *dist, double *std_deviation, int count);
     
 #endif

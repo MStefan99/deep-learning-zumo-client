@@ -16,6 +16,43 @@
 const int tile_size = 20;
 
 
+void send_obstacle(tile t) {
+    if (t.x && t.y) {
+        mqtt_print("Zumo/Obst", "(%i, %i)", t.x, t.y);
+    }
+}
+
+
+void pre_scan(uint8_t speed) {
+    tile t;
+    
+    rotate_and_center(3, speed);
+    for (int i = 0; i < 3; ++i){
+        move_to_next_intersection(speed);
+    }
+    send_coords();
+    
+    for (int i = 0; i < 6; ++i) {
+        rotate_and_center(0, speed); 
+        t = scan();
+        send_obstacle(t);
+        rotate_and_center(1, speed);
+        move_to_next_intersection(speed);
+        send_coords();
+    }
+    rotate_and_center(0, speed); 
+    t = scan();
+    send_obstacle(t);
+    rotate_and_center(3, speed);
+    
+    for (int i = 0; i < 3; ++i){
+        move_to_next_intersection(speed);
+    }
+    send_coords();
+    rotate_and_center(0, speed);
+}
+
+
 tile scan() {
     tile t = {robot_state.x, robot_state.y};
     double dist = 0;
@@ -25,23 +62,23 @@ tile scan() {
     int dist_tiles = dist / tile_size;
     
     
-    if (dist_tiles < 4 && std_dev < tile_size / 4) {
+    if (dist_tiles > 0 && dist_tiles < 5 && std_dev < tile_size / 4) {
         switch (robot_state.dir) {
-            case left:
-                t.x -= dist_tiles;
-                break;
-            
-            case forward:
+            case 0:
                 t.y -= dist_tiles;
                 break;
             
-            case right:
+            case 1:
                 t.x += dist_tiles;
                 break;
             
-            case backward:
+            case 2:
                 t.y += dist_tiles;
                 break;
+            
+            case 3:
+                t.x -= dist_tiles;
+                break;  
         } 
     } else {
         t.x = 0;
