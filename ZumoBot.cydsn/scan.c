@@ -12,6 +12,10 @@
 
 #include "scan.h"
 
+
+const int tile_size = 20;
+
+
 tile scan() {
     tile t = {robot_state.x, robot_state.y};
     int dist = Ultra_GetDistance();
@@ -43,5 +47,24 @@ tile scan() {
     return t;
 }
 
+
+void measure_distance(double *dist, double *std_deviation, int count) {
+    double m[count];
+    float exp;
+    float var;
+    float dev;
+    
+    for (int i = 0; i < count; ++i) {
+        m[i] = (double)Ultra_GetDistance();
+        vTaskDelay(10);
+    }
+    
+    exp = expected_value(m, count);
+    var = variance(m, exp, count);
+    dev = standard_deviation(var);
+    
+    *dist = exp;
+    *std_deviation = dev;    
+}
 
 /* [] END OF FILE */

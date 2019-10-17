@@ -15,9 +15,10 @@
     
     #include <math.h>
 
+    
     double expected_value(const double *realizations, int n);
     double variance(double *realizations, double exp_value, int n);
-    double std_deviation(double variance);
+    double standard_deviation(double variance);
     
     #endif
 

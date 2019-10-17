@@ -37,7 +37,7 @@ double variance(double *realizations, double exp_value, int n) {
 }
 
 
-double std_deviation(double variance) {
+double standard_deviation(double variance) {
     double d;
     d = sqrt(variance);
     return d;
