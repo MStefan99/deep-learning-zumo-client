@@ -36,6 +36,7 @@
     #include "movement.h"
     #include "smqtt.h"
     #include <stdbool.h>
+    #include "stat.h"
 
 
     const int led_timings[][10] = { // Numbers on even places - ON duration, on odd - OFF duration
