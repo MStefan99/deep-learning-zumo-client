@@ -53,34 +53,37 @@ void motor_turn_diff(uint8_t speed, int diff) {
 
 
 void move_to_next_intersection(state *robot_state, uint8_t speed) {
-    int shift_correction;
-    
-    while (!intersection_detected()) {
-        shift_correction = get_line_pos() * p_coefficient;
-        motor_turn_diff(speed, shift_correction);
-    }
-    
-    while (intersection_detected()) {
+    if (MOVEMENT_ENABLED) {
+        int shift_correction;
+        
+        while (!intersection_detected()) {
+            shift_correction = get_line_pos() * p_coefficient;
+            motor_turn_diff(speed, shift_correction);
+        }
+        
+        while (intersection_detected()) {
+            PWM_WriteCompare1(speed);
+            PWM_WriteCompare2(speed);
+        }
         PWM_WriteCompare1(speed);
         PWM_WriteCompare2(speed);
-    }
-    PWM_WriteCompare1(speed);
-    PWM_WriteCompare2(speed);
-    vTaskDelay(50);
-    motor_reset();
-    
-    if (robot_state->dir % 2) {
-        if (robot_state->dir / 2) {
-            --robot_state->x;
+        vTaskDelay(50);
+        motor_reset();
+        
+        if (robot_state->dir % 2) {
+            if (robot_state->dir / 2) {
+                --robot_state->x;
+            } else {
+                ++robot_state->x;
+            }
         } else {
-            ++robot_state->x;
+            if (robot_state->dir / 2) {
+                ++robot_state->y;
+            } else {
+                --robot_state->y;
+            }
         }
-    } else {
-        if (robot_state->dir / 2) {
-            ++robot_state->y;
-        } else {
-            --robot_state->y;
-        }
+        mqtt_print("Zumo/Pos", "(%i, %i)", robot_state->x, robot_state->y);
     }
 }
 
@@ -91,41 +94,45 @@ int motor_enabled() {
 
 
 void rotate_next(int side, uint8_t speed) {
-    motor_tank_turn(side, speed);
-    vTaskDelay(100);
-    
-    for (int i = 0; i < 2; ++i) {
-        while (!line_centered()) {
-            motor_tank_turn(side, speed);
+    if (MOVEMENT_ENABLED) {
+        motor_tank_turn(side, speed);
+        vTaskDelay(100);
+        
+        for (int i = 0; i < 2; ++i) {
+            while (!line_centered()) {
+                motor_tank_turn(side, speed);
+            }
+            while (line_centered()) {
+                motor_tank_turn(side, speed);
+            }
         }
-        while (line_centered()) {
-            motor_tank_turn(side, speed);
-        }
+        motor_reset();
     }
-    motor_reset();
 }
 
 
 void rotate(state *robot_state, direction dir, uint8_t speed) {
-    int n = (dir % 2) ^ (robot_state->dir % 2);
-    if (!n && dir != robot_state->dir) {
-        n = 2;
+    if (MOVEMENT_ENABLED) {
+        int n = (dir % 2) ^ (robot_state->dir % 2);
+        if (!n && dir != robot_state->dir) {
+            n = 2;
+        }
+        int side = dir - robot_state->dir;
+        if (dir == 0 && robot_state->dir == 3) {
+            side = 1;
+        } else if (dir == 3 && robot_state->dir == 0) {
+            side = 0;
+        }
+        if (side < 0) {
+            side = 0;
+        } else if (side > 1) {
+            side = 1;
+        }
+        for (int i = 0; i < n; ++i) {
+            rotate_next(side, speed);
+        }
+        robot_state->dir = dir;
     }
-    int side = dir - robot_state->dir;
-    if (dir == 0 && robot_state->dir == 3) {
-        side = 1;
-    } else if (dir == 3 && robot_state->dir == 0) {
-        side = 0;
-    }
-    if (side < 0) {
-        side = 0;
-    } else if (side > 1) {
-        side = 1;
-    }
-    for (int i = 0; i < n; ++i) {
-        rotate_next(side, speed);
-    }
-    robot_state->dir = dir;
 }
 
 

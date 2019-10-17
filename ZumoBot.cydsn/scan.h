@@ -29,6 +29,7 @@
     extern state robot_state;
     
     
+    void pre_scan();
     tile scan();
     void measure_distance(double *dist, double *std_deviation, int count);
     

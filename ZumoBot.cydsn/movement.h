@@ -19,6 +19,9 @@
         #include <task.h>
         #include <stdint.h>
         #include "line_detection.h"
+        #include "smqtt.h"
+    
+        #define MOVEMENT_ENABLED 1
         
         typedef enum {
             forward,

@@ -18,11 +18,14 @@ const int tile_size = 20;
 
 tile scan() {
     tile t = {robot_state.x, robot_state.y};
-    int dist = Ultra_GetDistance();
+    double dist = 0;
+    double std_dev = 0;
+    measure_distance(&dist, &std_dev, 5);
+    
     int dist_tiles = dist / tile_size;
     
     
-    if (dist_tiles < 4) {
+    if (dist_tiles < 4 && std_dev < tile_size / 4) {
         switch (robot_state.dir) {
             case left:
                 t.x -= dist_tiles;
@@ -41,8 +44,8 @@ tile scan() {
                 break;
         } 
     } else {
-        t.x = -1;
-        t.y = -1;
+        t.x = 0;
+        t.y = 0;
     }
     return t;
 }
@@ -56,7 +59,7 @@ void measure_distance(double *dist, double *std_deviation, int count) {
     
     for (int i = 0; i < count; ++i) {
         m[i] = (double)Ultra_GetDistance();
-        vTaskDelay(10);
+        vTaskDelay(2);
     }
     
     exp = expected_value(m, count);
