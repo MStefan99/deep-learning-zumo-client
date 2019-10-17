@@ -22,6 +22,7 @@ void motor_tank_turn(int side, uint8_t speed) {
     PWM_WriteCompare2(speed);
 }
 
+
 void reset() {
     MotorDirLeft_Write(0);
     MotorDirRight_Write(0);

@@ -38,17 +38,33 @@
     #include <stdbool.h>
 
 
-    volatile bool calibration_mode = false;
-    volatile bool calibration_done = false;
+    const int led_timings[][10] = { // Numbers on even places - ON duration, on odd - OFF duration
+        {50, 1450, 0}, // State 0 - idle (booted)
+        {50, 150, 50, 1250, 0}, // State 1 - idle (calibrated)
+        {300, 1200, 0}, // State 2 - pre-start scanning mode
+        {900, 100, 100, 100, 800, 0}, // State 3 - waiting for server
+        {300, 200, 300, 700, 0}, // State 4 - server-guided navigation mode
+        {50, 150, 50, 150, 50, 1050, 0}, // State 5 - idle (finished)
+        {300, 50, 100, 50, 0}, // State 6 - motor locked
+        {125, 125, 0} // State 7 - error
+        };
+    volatile int current_state = 0;
+    volatile int prev_state = 0;
+    volatile int led_state = 0;
+    bool calibrated = false;
     bool low_voltage_detected = false;
-    bool net_ready = false;
     static uint8_t speed = 100;
     TickType_t t = 0;
     mqtt_message msg = {"", ""};
-
-
-    CY_ISR_PROTO(Button_Interrupt);
+    state robot_state = {3, 10, forward};
+    int action = 0;
+    
+    
+    CY_ISR_PROTO(button_isr);
+    CY_ISR_PROTO(led_isr);
     void print_element(const void *element);
+    void voltage_check();
+    void change_state(int state);
     
     #endif
 
