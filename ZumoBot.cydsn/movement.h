@@ -46,7 +46,7 @@
         
         // Motor control
         int motor_enabled();
-        void reset();
+        void motor_reset();
         void set_motor_state(int state);
 
     #endif

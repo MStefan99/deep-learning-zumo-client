@@ -41,10 +41,8 @@ int zmain(void) {
                     vTaskDelay(5000);
                     
                     mqtt_print("Info/Zumo", "Pre-scan started");
-                    do {   
-                        // Blocking call to pre-scan goes here
-                        vTaskDelay(1000); // TODO: remove
-                    } while (!motor_enabled());
+                    // Blocking call to pre-scan goes here
+                    vTaskDelay(1000); // TODO: remove
                 }
                 
                 if (motor_enabled()) {
@@ -85,11 +83,10 @@ int zmain(void) {
                         sscanf(msg.message, "%i", &action);
                         printf("Received an order to execute action %i\n", action);
                         mqtt_print("Ack/Zumo", "Net action");
-                        do {
-//                          rotate(&robot_state, action, speed);
-//                          move_to_next_intersection(&robot_state, speed);
-                            vTaskDelay(1000); // TODO: remove
-                        } while (!motor_enabled());
+                        
+//                      rotate(&robot_state, action, speed);
+//                      move_to_next_intersection(&robot_state, speed);
+                        vTaskDelay(1000); // TODO: remove
                         
                         mqtt_print("Zumo/Move", "%i", t);
                     }
