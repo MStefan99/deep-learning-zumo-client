@@ -147,6 +147,14 @@ int mqtt_receive(mqtt_message *msg) {
 }
 
 
+int mqtt_peek(mqtt_message *msg) {
+    if (xQueuePeek(in_q, msg, 10) != pdTRUE) {
+        return 0;
+    }
+    return 1;
+}
+
+
 int mqtt_check() {
     return uxQueueMessagesWaiting(in_q);
 }

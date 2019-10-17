@@ -15,8 +15,8 @@ int zmain(void) {
     BatteryLed_Write(1);
     
     mqtt_sub("Net/#");
-    mqtt_print("Zumo/Boot", "Zumo booted");
-    printf("Booted. Entering booted idle state\n");
+    mqtt_print("Zumo/Status", "Boot");
+    change_state(0);
     
     while (1) {  
         t = xTaskGetTickCount();
@@ -29,7 +29,7 @@ int zmain(void) {
                 
             case 1:
                 if (!calibrated) { 
-                    printf("Calibrated. Entering calibrated idle state\n");;
+                    printf("Calibrated. Entering calibrated idle state\n");
                     calibrate();
                     calibrated = true;
                 }
@@ -38,16 +38,17 @@ int zmain(void) {
             case 2:
                 if (motor_enabled()) {
                     printf("Motors enabled. Entering pre-start scanning state\n");
-                    vTaskDelay(8000);
+                    vTaskDelay(5000);
                     
+                    mqtt_print("Info/Zumo", "Pre-scan started");
                     do {   
-                        // Pre-scan goes here
+                        // Blocking call to pre-scan goes here
                         vTaskDelay(1000); // TODO: remove
                     } while (!motor_enabled());
                 }
                 
                 if (motor_enabled()) {
-                    mqtt_print("Zumo/Start", "Start");
+                    mqtt_print("Zumo/Status", "Ready");
                     change_state(3);
                     printf("Pre-scan done. Entering server wait state\n");
                 }
@@ -55,32 +56,35 @@ int zmain(void) {
             break;
             
             case 3:
-                if (mqtt_check()) {
+                if (mqtt_receive(&msg) && strstr(msg.topic, "Net/Status") && strstr(msg.message, "Ready")) {
                     change_state(4);
-                    printf("Message received from server. Entering server-guided state\n");
+                    printf("Received net ready confirmation. Resending start confirmation\n");
+                    mqtt_print("Ack/Zumo" , "Net ready");
+                    mqtt_print("Zumo/Status", "Ready");
                 }
                 vTaskDelay(1000);
             break;
             
             case 4:
-                if (mqtt_receive(&msg)) {                
+                if (mqtt_receive(&msg)) { 
+                    mqtt_print("Rec/Zumo", "Rec on \"%s\"", msg.topic);
                     if (strstr(msg.topic, "Net/Status")) {
-                        if (strstr(msg.message, "Ready")) {
-                            printf("Received net ready confirmation. Resending start confirmation\n");
-                            mqtt_print("Zumo/Start", "Start");
-                        } else if (strstr(msg.message, "Finish")) {
+                        if (strstr(msg.message, "Finish")) {
                             printf("Received finish confirmation. "
                                    "Entering finished idle state, disabling motors\n");
+                            mqtt_print("Ack/Zumo", "Net finish");
                             change_state(5);
                         } else if (strstr(msg.message, "Stuck")) {
                             printf("Received stuck confirmation. "
                                    "Entering finished idle state, disabling motors\n");
+                            mqtt_print("Ack/Zumo", "Net stuck");
                             change_state(5);
                         }
                       
                     } else if (strstr(msg.topic, "Net/Action")) {
                         sscanf(msg.message, "%i", &action);
                         printf("Received an order to execute action %i\n", action);
+                        mqtt_print("Ack/Zumo", "Net action");
                         do {
 //                          rotate(&robot_state, action, speed);
 //                          move_to_next_intersection(&robot_state, speed);
@@ -119,7 +123,7 @@ void print_element(const void *element) {
 
 
 void change_state(int state) {
-    if (state > 0) {
+    if (state >= 0) {
         if (state != current_state) {
             prev_state = current_state;
             current_state = state;
@@ -134,6 +138,7 @@ void change_state(int state) {
     } else {
         set_motor_state(0);
     }
+    mqtt_print("Info/Zumo", "State %i", current_state);
     led_state = 0;
 }
 
@@ -171,12 +176,10 @@ CY_ISR(led_isr) {
 
 
 void voltage_check() {
-    if (!voltage_test()) {
-            if (!low_voltage_detected) {
-                mqtt_print("Zumo/WARNING", "Low voltage!");
-                printf("Low voltage. Disabling motors, entering error state\n");
-                low_voltage_detected = true;
-            }
+    if (!voltage_test() && !low_voltage_detected) {
+            mqtt_print("Zumo/WARNING", "Low voltage!");
+            printf("Low voltage. Disabling motors, entering error state\n");
+            low_voltage_detected = true;
             change_state(7);
         } else if (voltage_test() && low_voltage_detected) {
             mqtt_print("Zumo/DEBUG", "Voltage normal");

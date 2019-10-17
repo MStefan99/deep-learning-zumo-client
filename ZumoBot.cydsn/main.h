@@ -48,8 +48,8 @@
         {300, 50, 100, 50, 0}, // State 6 - motor locked
         {125, 125, 0} // State 7 - error
         };
-    volatile int current_state = 0;
-    volatile int prev_state = 0;
+    volatile int current_state = 7;
+    volatile int prev_state = 7;
     volatile int led_state = 0;
     bool calibrated = false;
     bool low_voltage_detected = false;
