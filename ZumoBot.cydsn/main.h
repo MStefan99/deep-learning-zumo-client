@@ -38,22 +38,21 @@
     #include <stdbool.h>
 
 
-    // Program states
-    const int led_timings[][12] = { // Even numbers - ON duration, odd - OFF duration
+    const int led_timings[][10] = { // Numbers on even places - ON duration, on odd - OFF duration
         {50, 1450, 0}, // State 0 - idle (booted)
-        {100, 900, 0},  // State 1 - idle (calibrated)
-        {100, 400, 100, 900, 0},  // State 2 - pre-start scanning mode
-        {900, 100, 200, 1300}, // State 3 - waiting for server
-        {100, 400, 100, 400, 100, 1400, 0},  // State 4 - server-guided navigation mode
-        {900, 100, 0},  // State 5 - idle (finished)
-        {1300, 50, 100, 50, 0}, // State 6 - motor locked
-        {100, 100, 0} // State 7 - error
+        {50, 150, 50, 1250, 0}, // State 1 - idle (calibrated)
+        {300, 1200, 0}, // State 2 - pre-start scanning mode
+        {900, 100, 100, 100, 800, 0}, // State 3 - waiting for server
+        {300, 200, 300, 700, 0}, // State 4 - server-guided navigation mode
+        {50, 150, 50, 150, 50, 1050, 0}, // State 5 - idle (finished)
+        {300, 50, 100, 50, 0}, // State 6 - motor locked
+        {125, 125, 0} // State 7 - error
         };
-    volatile bool calibration_mode = false;
-    volatile bool calibration_done = false;
-    volatile int led_state[2] = {0, 0};
+    volatile int current_state = 0;
+    volatile int prev_state = 0;
+    volatile int led_state = 0;
+    bool calibrated = false;
     bool low_voltage_detected = false;
-    bool pre_scan = false;
     static uint8_t speed = 100;
     TickType_t t = 0;
     mqtt_message msg = {"", ""};
@@ -64,6 +63,8 @@
     CY_ISR_PROTO(button_isr);
     CY_ISR_PROTO(led_isr);
     void print_element(const void *element);
+    void voltage_check();
+    void change_state(int state);
     
     #endif
 

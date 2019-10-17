@@ -33,6 +33,7 @@
     int mqtt_print(char *topic, char *format, ...);
     int mqtt_sub(char *topicFilter);
     int mqtt_receive(mqtt_message *msg);
+    int mqtt_check();
     int mqtt_unsub(char *topicFilter);
     void mqtt_send(mqtt_message msg);
     

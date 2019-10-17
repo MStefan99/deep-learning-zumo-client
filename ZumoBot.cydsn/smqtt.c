@@ -147,4 +147,9 @@ int mqtt_receive(mqtt_message *msg) {
 }
 
 
+int mqtt_check() {
+    return uxQueueMessagesWaiting(in_q);
+}
+
+
 /* [] END OF FILE */
