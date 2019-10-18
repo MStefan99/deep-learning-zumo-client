@@ -20,6 +20,7 @@
     #include "task.h"
     #include "stat.h"
     #include "smqtt.h"
+    #include "Beep.h"
     
     typedef struct {
         int x;
