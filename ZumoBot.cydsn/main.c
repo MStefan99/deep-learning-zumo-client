@@ -18,8 +18,8 @@ int zmain(void) {
     mqtt_print("Zumo/Status", "Boot");
     change_state(0);
     
-    while (1) {  
-        t = xTaskGetTickCount();
+    while (1) {
+        ticks = xTaskGetTickCount();
         voltage_check();
         
         switch (current_state) {
@@ -41,10 +41,7 @@ int zmain(void) {
                     vTaskDelay(5000);
                     
                     mqtt_print("Info/Zumo", "Pre-scan started");
-                    do {   
-                        // Blocking call to pre-scan goes here
-                        vTaskDelay(1000); // TODO: remove
-                    } while (!motor_enabled());
+                    pre_scan(speed);
                 }
                 
                 if (motor_enabled()) {
@@ -59,7 +56,7 @@ int zmain(void) {
                 if (mqtt_receive(&msg) && strstr(msg.topic, "Net/Status") && strstr(msg.message, "Ready")) {
                     change_state(4);
                     printf("Received net ready confirmation. Resending start confirmation\n");
-                    mqtt_print("Ack/Zumo" , "Net ready");
+                    mqtt_print("Ack/Zumo" , "Ready");
                     mqtt_print("Zumo/Status", "Ready");
                 }
                 vTaskDelay(1000);
@@ -72,26 +69,25 @@ int zmain(void) {
                         if (strstr(msg.message, "Finish")) {
                             printf("Received finish confirmation. "
                                    "Entering finished idle state, disabling motors\n");
-                            mqtt_print("Ack/Zumo", "Net finish");
+                            mqtt_print("Ack/Zumo", "Finish");
                             change_state(5);
                         } else if (strstr(msg.message, "Stuck")) {
                             printf("Received stuck confirmation. "
                                    "Entering finished idle state, disabling motors\n");
-                            mqtt_print("Ack/Zumo", "Net stuck");
+                            mqtt_print("Ack/Zumo", "Stuck");
                             change_state(5);
                         }
                       
                     } else if (strstr(msg.topic, "Net/Action")) {
                         sscanf(msg.message, "%i", &action);
                         printf("Received an order to execute action %i\n", action);
-                        mqtt_print("Ack/Zumo", "Net action");
-                        do {
-//                          rotate(&robot_state, action, speed);
-//                          move_to_next_intersection(&robot_state, speed);
-                            vTaskDelay(1000); // TODO: remove
-                        } while (!motor_enabled());
+                        mqtt_print("Ack/Zumo", "Action");
+                        rotate_and_center(action, speed);
+                        move_to_next_intersection(speed);
+                        t = scan();
+                        send_obstacle(t);
                         
-                        mqtt_print("Zumo/Move", "%i", t);
+                        mqtt_print("Zumo/Move", "%i", action);
                     }
                 }
             break;

@@ -13,22 +13,27 @@
 
 #ifndef SCAN_H_
 #define SCAN_H_
+    
     #include "movement.h"
     #include "Ultra.h"
-    
-    
-    const int tile_size = 20;  // TODO: check
+    #include "FreeRTOS.h"
+    #include "task.h"
+    #include "stat.h"
+    #include "smqtt.h"
     
     typedef struct {
         int x;
         int y;
     } tile;
     
-    
+    extern const int tile_size;  // TODO: check
     extern state robot_state;
     
     
+    void pre_scan(uint8_t speed);
     tile scan();
+    void send_obstacle(tile t);
+    void measure_distance(double *dist, double *std_deviation, int count);
     
 #endif
 

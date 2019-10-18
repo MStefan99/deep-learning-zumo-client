@@ -17,7 +17,6 @@
     #include <stdio.h>
     #include "FreeRTOS.h"
     #include "task.h"
-    #include "Motor.h"
     #include "Ultra.h"
     #include "Nunchuk.h"
     #include "Reflectance.h"
@@ -36,6 +35,8 @@
     #include "movement.h"
     #include "smqtt.h"
     #include <stdbool.h>
+    #include "stat.h"
+    #include "scan.h"
 
 
     const int led_timings[][10] = { // Numbers on even places - ON duration, on odd - OFF duration
@@ -54,9 +55,9 @@
     bool calibrated = false;
     bool low_voltage_detected = false;
     static uint8_t speed = 100;
-    TickType_t t = 0;
+    TickType_t ticks = 0;
+    tile t;
     mqtt_message msg = {"", ""};
-    state robot_state = {3, 10, forward};
     int action = 0;
     
     
