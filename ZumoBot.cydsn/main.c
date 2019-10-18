@@ -100,6 +100,7 @@ int zmain(void) {
         
             default:
                 printf("Tried to enter undefined state!\n");
+                mqtt_print("Info/Zumo/WARNING", "Undef state!");
                 change_state(7);
             break;
         }
@@ -128,7 +129,8 @@ void change_state(int state) {
     } else {
         set_motor_state(0);
     }
-    printf("Entered %s state (%i)", states[current_state].name, current_state);
+    
+    printf("Entered %s state (%i)\n", states[current_state].name, current_state);
     mqtt_print("Info/Zumo/State", "%s state (%i)", states[current_state].name, current_state);
     led_state = 0;
 }
@@ -168,13 +170,13 @@ CY_ISR(led_isr) {
 
 void voltage_check() {
     if (!voltage_test() && !low_voltage_detected) {
-            mqtt_print("Zumo/WARNING", "Low voltage!");
+            mqtt_print("Info/Zumo/WARNING", "Low voltage!");
             printf("Low voltage. Disabling motors, entering error state\n");
             low_voltage_detected = true;
             change_state(7);
             vTaskDelay(5000);
         } else if (voltage_test() && low_voltage_detected) {
-            mqtt_print("Zumo/DEBUG", "Voltage normal");
+            mqtt_print("Info/Zumo/Status", "Voltage normal");
             printf("Voltage normal. Enabling motors, restoring state\n");
             low_voltage_detected = false;
             change_state(-1);

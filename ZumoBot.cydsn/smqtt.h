@@ -25,7 +25,7 @@
     #define MESSAGE_SIZE 32
     
     typedef struct {
-        char topic[MESSAGE_SIZE / 2];
+        char topic[MESSAGE_SIZE];
         char message[MESSAGE_SIZE];
     } mqtt_message;
     

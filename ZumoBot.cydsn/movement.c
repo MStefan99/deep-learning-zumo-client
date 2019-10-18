@@ -75,25 +75,26 @@ void move_to_next_intersection(uint8_t speed) {
         PWM_WriteCompare2(speed);
         vTaskDelay(50);
         motor_reset();
+    } else {
+        vTaskDelay(500);
+    }
+    
+    switch (robot_position.dir) {
+        case 0:
+            --robot_position.y;
+        break;
         
-        switch (robot_position.dir) {
-            case 0:
-                --robot_position.y;
-            break;
-            
-            case 1:
-                ++robot_position.x;
-            break;
-            
-            case 2:
-                ++robot_position.y;
-            break;
-            
-            case 3:
-                --robot_position.x;
-            break;
-        }
-        printf("Moved, state %i %i %i\n", robot_position.x, robot_position.y, robot_position.dir);
+        case 1:
+            ++robot_position.x;
+        break;
+        
+        case 2:
+            ++robot_position.y;
+        break;
+        
+        case 3:
+            --robot_position.x;
+        break;
     }
 }
 
@@ -117,13 +118,14 @@ void motor_rotate_next(int side, uint8_t speed) {
             }
         }
         motor_reset();
+    } else {
+        vTaskDelay(500);
     }
 }
 
 
 void rotate_and_center(int dir, uint8_t speed) {
     if (MOVEMENT_ENABLED) {
-        printf("Rotating. Current %i, dest %i\n", robot_position.dir, dir);
         int n = (dir % 2) ^ (robot_position.dir % 2);
         if (!n && dir != robot_position.dir) {
             n = 2;
@@ -140,11 +142,12 @@ void rotate_and_center(int dir, uint8_t speed) {
             side = 1;
         }
         for (int i = 0; i < n; ++i) {
-            printf("Rotating, side %i\n", side);
             motor_rotate_next(side, speed);
         }
-        robot_position.dir = dir;
+    } else {
+        vTaskDelay(500);
     }
+    robot_position.dir = dir;
 }
 
 

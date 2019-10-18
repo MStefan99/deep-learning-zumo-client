@@ -52,7 +52,7 @@
         {"Pre-scan", 1, {300, 1200, 0}},  // State 2 - pre-start scanning mode
         {"Wait", 0, {900, 100, 100, 100, 800, 0}},  // State 3 - waiting for server
         {"Nav", 1, {300, 200, 300, 700, 0}},  // State 4 - server-guided navigation mode
-        {"Fin idle", 0, {50, 150, 50, 150, 50, 1050, 0}},  // State 5 - idle (finished)
+        {"Finish idle", 0, {50, 150, 50, 150, 50, 1050, 0}},  // State 5 - idle (finished)
         {"Locked", 0, {300, 50, 100, 50, 0}},  // State 6 - motor locked
         {"Error", 0, {125, 125, 0}}  // State 7 - error
     };

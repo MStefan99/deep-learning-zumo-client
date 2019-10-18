@@ -15,7 +15,6 @@
     
         #include <string.h>
         #include <stdlib.h>
-        #include <stdio.h>
         #include "smqtt.h"
 
         typedef struct node_ {

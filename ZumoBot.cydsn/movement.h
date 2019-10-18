@@ -21,7 +21,7 @@
         #include "line_detection.h"
         #include "smqtt.h"
     
-        #define MOVEMENT_ENABLED 1
+        #define MOVEMENT_ENABLED 1  // Used for debugging, does not block or affect program flow
         
         typedef struct {
             int x;

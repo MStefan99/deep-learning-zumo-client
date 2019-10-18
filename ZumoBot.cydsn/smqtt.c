@@ -75,8 +75,6 @@ void SMQTTTask() {
     
 	if ((rc = MQTTConnect(&client, &connectData)) != 0)
 		printf("Return code from MQTT connect is %d\n", rc);
-	else
-		printf("MQTT Connected\n");
     
     while (1) {
         sub_entry s;
@@ -94,8 +92,10 @@ void SMQTTTask() {
         if (xQueueReceive(sub_q, (void *)&s, 0) == pdTRUE) {
             if (s.sub) {
                 MQTTSubscribe(&client, s.topic, 2, SMQTTReceive);
+                printf("SMQTT subscribed to \"%s\"\n", s.topic);
             } else {
                 MQTTUnsubscribe(&client, s.topic);
+                printf("SMQTT unsubscribed from \"%s\"\n", s.topic);
             }
         }
     }
