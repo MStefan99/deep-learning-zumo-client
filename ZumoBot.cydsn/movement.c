@@ -13,11 +13,11 @@
 #include "movement.h"
 
 const float p_coefficient = 1.5;
-state robot_state = {3, 10, 0};
+position robot_position = {3, 10, 0};
 
 
 void send_coords() {
-    mqtt_print("Zumo/Coords", "(%i, %i)", robot_state.x, robot_state.y);
+    mqtt_print("Zumo/Coords", "(%i, %i)", robot_position.x, robot_position.y);
 }
 
 
@@ -76,24 +76,24 @@ void move_to_next_intersection(uint8_t speed) {
         vTaskDelay(50);
         motor_reset();
         
-        switch (robot_state.dir) {
+        switch (robot_position.dir) {
             case 0:
-                --robot_state.y;
+                --robot_position.y;
             break;
             
             case 1:
-                ++robot_state.x;
+                ++robot_position.x;
             break;
             
             case 2:
-                ++robot_state.y;
+                ++robot_position.y;
             break;
             
             case 3:
-                --robot_state.x;
+                --robot_position.x;
             break;
         }
-        printf("Moved, state %i %i %i\n", robot_state.x, robot_state.y, robot_state.dir);
+        printf("Moved, state %i %i %i\n", robot_position.x, robot_position.y, robot_position.dir);
     }
 }
 
@@ -123,15 +123,15 @@ void motor_rotate_next(int side, uint8_t speed) {
 
 void rotate_and_center(int dir, uint8_t speed) {
     if (MOVEMENT_ENABLED) {
-        printf("Rotating. Current %i, dest %i\n", robot_state.dir, dir);
-        int n = (dir % 2) ^ (robot_state.dir % 2);
-        if (!n && dir != robot_state.dir) {
+        printf("Rotating. Current %i, dest %i\n", robot_position.dir, dir);
+        int n = (dir % 2) ^ (robot_position.dir % 2);
+        if (!n && dir != robot_position.dir) {
             n = 2;
         }
-        int side = dir - robot_state.dir;
-        if (dir == 0 && robot_state.dir == 3) {
+        int side = dir - robot_position.dir;
+        if (dir == 0 && robot_position.dir == 3) {
             side = 1;
-        } else if (dir == 3 && robot_state.dir == 0) {
+        } else if (dir == 3 && robot_position.dir == 0) {
             side = 0;
         }
         if (side < 0) {
@@ -143,7 +143,7 @@ void rotate_and_center(int dir, uint8_t speed) {
             printf("Rotating, side %i\n", side);
             motor_rotate_next(side, speed);
         }
-        robot_state.dir = dir;
+        robot_position.dir = dir;
     }
 }
 

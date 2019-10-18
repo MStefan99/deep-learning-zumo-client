@@ -27,10 +27,10 @@
             int x;
             int y;
             int dir;
-        } state;
+        } position;
         
         extern const float p_coefficient;
-        extern state robot_state;
+        extern position robot_position;
         
         // Blocking calls
         void move_to_next_intersection(uint8_t speed);

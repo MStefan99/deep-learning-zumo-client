@@ -54,7 +54,7 @@ void pre_scan(uint8_t speed) {
 
 
 tile scan() {
-    tile t = {robot_state.x, robot_state.y};
+    tile t = {robot_position.x, robot_position.y};
     double dist = 0;
     double std_dev = 0;
     measure_distance(&dist, &std_dev, 5);
@@ -62,7 +62,7 @@ tile scan() {
     int dist_tiles = dist / tile_size;
 
     if (dist_tiles > 0 && dist_tiles < 5 && std_dev < tile_size / 4) {
-        switch (robot_state.dir) {
+        switch (robot_position.dir) {
             case 0:
                 t.y -= dist_tiles;
                 break;

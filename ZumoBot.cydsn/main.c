@@ -28,7 +28,6 @@ int zmain(void) {
                 
             case 1:
                 if (!calibrated) { 
-                    printf("Calibrated. Entering calibrated idle state\n");
                     calibrate();
                     calibrated = true;
                 }
@@ -36,7 +35,6 @@ int zmain(void) {
                 
             case 2:
                 if (motor_enabled()) {
-                    printf("Motors enabled. Entering pre-start scanning state\n");
                     vTaskDelay(5000);
                     
                     mqtt_print("Info/Zumo", "Pre-scan started");
@@ -46,7 +44,6 @@ int zmain(void) {
                 if (motor_enabled()) {
                     mqtt_print("Zumo/Status", "Ready");
                     change_state(3);
-                    printf("Pre-scan done. Entering server wait state\n");
                 }
                 vTaskDelay(1000);
             break;
@@ -54,7 +51,7 @@ int zmain(void) {
             case 3:
                 if (mqtt_receive(&msg) && strstr(msg.topic, "Net/Status") && strstr(msg.message, "Ready")) {
                     change_state(4);
-                    printf("Received net ready confirmation. Resending start confirmation\n");
+                    printf("Received net ready confirmation\n");
                     mqtt_print("Ack/Zumo" , "Ready");
                     mqtt_print("Zumo/Status", "Ready");
                 }
@@ -66,13 +63,11 @@ int zmain(void) {
                     mqtt_print("Rec/Zumo", "Rec on \"%s\"", msg.topic);
                     if (strstr(msg.topic, "Net/Status")) {
                         if (strstr(msg.message, "Finish")) {
-                            printf("Received finish confirmation. "
-                                   "Entering finished idle state, disabling motors\n");
+                            printf("Received finish confirmation\n");
                             mqtt_print("Ack/Zumo", "Finish");
                             change_state(5);
                         } else if (strstr(msg.message, "Stuck")) {
-                            printf("Received stuck confirmation. "
-                                   "Entering finished idle state, disabling motors\n");
+                            printf("Received stuck confirmation\n");
                             mqtt_print("Ack/Zumo", "Stuck");
                             change_state(5);
                         }
@@ -104,7 +99,7 @@ int zmain(void) {
             break;
         
             default:
-                printf("Tried to enter undefined state. Entering error state");
+                printf("Tried to enter undefined state!\n");
                 change_state(7);
             break;
         }
@@ -128,12 +123,13 @@ void change_state(int state) {
         prev_state = current_state;
         current_state = t;
     }
-    if (current_state == 2 || current_state == 4) {
+    if (states[current_state].movement_enabled) {
         set_motor_state(1);
     } else {
         set_motor_state(0);
     }
-    mqtt_print("Info/Zumo", "State %i", current_state);
+    printf("Entered %s state (%i)", states[current_state].name, current_state);
+    mqtt_print("Info/Zumo/State", "%s state (%i)", states[current_state].name, current_state);
     led_state = 0;
 }
 
@@ -144,7 +140,7 @@ CY_ISR(button_isr) {
     } else if (current_state == 1) {
         change_state(2);
     } else {
-        if (motor_enabled() && current_state != 5) {
+        if (motor_enabled() && states[current_state].movement_enabled) {
             change_state(6);
         } else if (current_state  == 6) {
             change_state(-1);
@@ -156,7 +152,7 @@ CY_ISR(button_isr) {
 
 CY_ISR(led_isr) {
     ++led_state;
-    if (!led_timings[current_state][led_state]) {
+    if (!states[current_state].led_timings[led_state]) {
         led_state = 0;
     }
     if (led_state % 2) {
@@ -165,7 +161,7 @@ CY_ISR(led_isr) {
         BatteryLed_Write(0);
     }
     
-    LED_Timer_WritePeriod(led_timings[current_state][led_state]);
+    LED_Timer_WritePeriod(states[current_state].led_timings[led_state]);
     LED_Timer_ClearFIFO();
 }
 

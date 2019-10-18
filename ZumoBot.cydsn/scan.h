@@ -28,7 +28,7 @@
     } tile;
     
     extern const int tile_size;  // TODO: check
-    extern state robot_state;
+    extern position robot_position;
     
     
     void pre_scan(uint8_t speed);

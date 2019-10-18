@@ -38,17 +38,24 @@
     #include "stat.h"
     #include "scan.h"
 
-
-    const int led_timings[][10] = { // Numbers on even places - ON duration, on odd - OFF duration
-        {50, 1450, 0}, // State 0 - idle (booted)
-        {50, 150, 50, 1250, 0}, // State 1 - idle (calibrated)
-        {300, 1200, 0}, // State 2 - pre-start scanning mode
-        {900, 100, 100, 100, 800, 0}, // State 3 - waiting for server
-        {300, 200, 300, 700, 0}, // State 4 - server-guided navigation mode
-        {50, 150, 50, 150, 50, 1050, 0}, // State 5 - idle (finished)
-        {300, 50, 100, 50, 0}, // State 6 - motor locked
-        {125, 125, 0} // State 7 - error
-        };
+    
+    typedef struct {
+        char name[32];
+        int movement_enabled;
+        int led_timings[10];
+    } state;
+    
+    
+    state states[8] = {
+        {"Boot idle", 0, {50, 1450, 0}}, // State 0 - idle (booted)
+        {"Clb idle", 0, {50, 150, 50, 1250, 0}},  // State 1 - idle (calibrated)
+        {"Pre-scan", 1, {300, 1200, 0}},  // State 2 - pre-start scanning mode
+        {"Wait", 0, {900, 100, 100, 100, 800, 0}},  // State 3 - waiting for server
+        {"Nav", 1, {300, 200, 300, 700, 0}},  // State 4 - server-guided navigation mode
+        {"Fin idle", 0, {50, 150, 50, 150, 50, 1050, 0}},  // State 5 - idle (finished)
+        {"Locked", 0, {300, 50, 100, 50, 0}},  // State 6 - motor locked
+        {"Error", 0, {125, 125, 0}}  // State 7 - error
+    };
     volatile int current_state = 7;
     volatile int prev_state = 7;
     volatile int led_state = 0;
