@@ -22,6 +22,8 @@
     #include "smqtt.h"
     #include "Beep.h"
     
+    #define SOUND_ENABLED 1
+    
     typedef struct {
         int x;
         int y;

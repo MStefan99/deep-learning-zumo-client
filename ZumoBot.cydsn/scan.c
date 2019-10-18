@@ -80,16 +80,20 @@ tile scan() {
                 break;
         }
 
-        for (int i = 0; i < dist_tiles; ++i) {
-            Beep(50, 50);
-            vTaskDelay(150);
+        if (SOUND_ENABLED){
+            for (int i = 0; i < dist_tiles; ++i) {
+                Beep(50, 50);
+                vTaskDelay(150);
+            }
         }
         vTaskDelay(1500 - 200 * dist_tiles);
     } else {
         t.x = -100;
         t.y = -100;
-        Beep(300, 50);
-        vTaskDelay(1200);
+        if (SOUND_ENABLED) {
+            Beep(300, 50);
+            vTaskDelay(1200);
+        }
     }
     return t;
 }
