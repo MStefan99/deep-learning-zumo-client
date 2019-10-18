@@ -17,7 +17,7 @@ const int tile_size = 20;
 
 
 void send_obstacle(tile t) {
-    if (t.x && t.y) {
+    if (t.x != -100 && t.y != -100) {
         mqtt_print("Zumo/Obst", "(%i, %i)", t.x, t.y);
     }
 }
@@ -81,8 +81,8 @@ tile scan() {
                 break;  
         } 
     } else {
-        t.x = 0;
-        t.y = 0;
+        t.x = -100;
+        t.y = -100;
     }
     return t;
 }
