@@ -19,7 +19,6 @@ int zmain(void) {
     change_state(0);
     
     while (1) {
-        ticks = xTaskGetTickCount();
         voltage_check();
         
         switch (current_state) {
@@ -177,6 +176,7 @@ void voltage_check() {
             printf("Low voltage. Disabling motors, entering error state\n");
             low_voltage_detected = true;
             change_state(7);
+            vTaskDelay(5000);
         } else if (voltage_test() && low_voltage_detected) {
             mqtt_print("Zumo/DEBUG", "Voltage normal");
             printf("Voltage normal. Enabling motors, restoring state\n");

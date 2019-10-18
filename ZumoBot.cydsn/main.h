@@ -55,7 +55,6 @@
     bool calibrated = false;
     bool low_voltage_detected = false;
     static uint8_t speed = 100;
-    TickType_t ticks = 0;
     tile t;
     mqtt_message msg = {"", ""};
     int action = 0;
