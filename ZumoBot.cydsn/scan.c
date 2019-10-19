@@ -61,8 +61,12 @@ tile scan() {
     measure_distance(&dist, &std_dev, 5);
 
     int dist_tiles = (dist - (double)pos_fix) / tile_size;
+    
+    if (!dist_tiles) {
+        dist_tiles = 1;
+    }
 
-    if (dist_tiles > 0 && dist_tiles < 5 && std_dev < tile_size / 4) {
+    if (dist_tiles < 5 && std_dev < tile_size / 4) {
         switch (robot_position.dir) {
             case 0:
                 t.y -= dist_tiles;
