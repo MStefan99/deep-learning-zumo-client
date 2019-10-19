@@ -66,14 +66,14 @@ int zmain(void) {
                             change_state(5);
                         } else if (strstr(msg.message, "Stuck")) {
                             mqtt_print("Ack/Zumo", "Stuck");
-                            change_state(5);
+                            change_state(6);
                         }
                       
                     } else if (strstr(msg.topic, "Net/Action")) {
                         sscanf(msg.message, "%i", &action);
                         mqtt_print("Ack/Zumo", "Action");
-                        rotate_and_center(action, speed);
-                        move_to_next_intersection(speed);
+                        rotate_to(action, speed);
+                        move_to_next(speed);
                         t = scan();
                         send_obstacle(t);
                         
@@ -83,6 +83,8 @@ int zmain(void) {
             break;
             
             case 5:
+                complete_track(speed);
+                change_state(6);
                 vTaskDelay(1000);
             break;
             
@@ -93,10 +95,14 @@ int zmain(void) {
             case 7:
                 vTaskDelay(1000);
             break;
+            
+            case 8:
+                vTaskDelay(1000);
+            break;
         
             default:
                 mqtt_print("Info/Zumo/WARNING", "Undef state!");
-                change_state(7);
+                change_state(8);
             break;
         }
     }
@@ -119,11 +125,7 @@ void change_state(int state) {
         prev_state = current_state;
         current_state = t;
     }
-    if (states[current_state].movement_enabled) {
-        set_motor_state(1);
-    } else {
-        set_motor_state(0);
-    }
+    set_motor_state(states[current_state].movement_enabled);
     
     mqtt_print("Info/Zumo/State", "%s state (%i)", states[current_state].name, current_state);
     led_state = 0;
@@ -137,8 +139,8 @@ CY_ISR(button_isr) {
         change_state(2);
     } else {
         if (motor_enabled() && states[current_state].movement_enabled) {
-            change_state(6);
-        } else if (current_state  == 6) {
+            change_state(7);
+        } else if (current_state == 7) {
             change_state(-1);
         }
     }
@@ -164,15 +166,14 @@ CY_ISR(led_isr) {
 
 void voltage_check() {
     if (!voltage_test() && !low_voltage_detected) {
-            mqtt_print("Info/Zumo/WARNING", "Low voltage!");
-            low_voltage_detected = true;
-            change_state(7);
-            vTaskDelay(5000);
-        } else if (voltage_test() && low_voltage_detected) {
-            mqtt_print("Info/Zumo/Status", "Voltage normal");
-            low_voltage_detected = false;
-            change_state(-1);
-        }
+        mqtt_print("Info/Zumo/WARNING", "Low voltage!");
+        low_voltage_detected = true;
+        change_state(8);
+    } else if (voltage_test() && low_voltage_detected) {
+        mqtt_print("Info/Zumo/Status", "Voltage normal");
+        low_voltage_detected = false;
+        change_state(-1);
+    }
 }
 
 

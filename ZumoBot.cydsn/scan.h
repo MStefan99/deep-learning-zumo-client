@@ -30,6 +30,7 @@
     } tile;
     
     extern const int tile_size;  // TODO: check
+    extern const int pos_fix;
     extern position robot_position;
     
     

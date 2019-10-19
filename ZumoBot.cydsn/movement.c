@@ -58,7 +58,7 @@ void motor_turn_diff(uint8_t speed, int diff) {
 }
 
 
-void move_to_next_intersection(uint8_t speed) {
+void move_to_next(uint8_t speed) {
     if (MOVEMENT_ENABLED) {
         int shift_correction;
         
@@ -104,7 +104,7 @@ int motor_enabled() {
 }
 
 
-void motor_rotate_next(int side, uint8_t speed) {
+void motor_rotate(int side, uint8_t speed) {
     if (MOVEMENT_ENABLED) {
         motor_tank_turn(side, speed);
         vTaskDelay(100);
@@ -124,7 +124,7 @@ void motor_rotate_next(int side, uint8_t speed) {
 }
 
 
-void rotate_and_center(int dir, uint8_t speed) {
+void rotate_to(int dir, uint8_t speed) {
     if (MOVEMENT_ENABLED) {
         int n = (dir % 2) ^ (robot_position.dir % 2);
         if (!n && dir != robot_position.dir) {
@@ -142,12 +142,30 @@ void rotate_and_center(int dir, uint8_t speed) {
             side = 1;
         }
         for (int i = 0; i < n; ++i) {
-            motor_rotate_next(side, speed);
+            motor_rotate(side, speed);
         }
     } else {
         vTaskDelay(500);
     }
     robot_position.dir = dir;
+}
+
+
+void complete_track(uint8_t speed) {
+    while (robot_position.x != 3) {
+        if (robot_position.x > 3) {
+            rotate_to(3, speed);
+            move_to_next(speed);
+        } else {
+            rotate_to(1, speed);
+            move_to_next(speed);
+        }
+        send_coords();
+    }
+    rotate_to(0, speed);
+    move_to_next(speed);
+    move_to_next(speed);
+    send_coords();
 }
 
 

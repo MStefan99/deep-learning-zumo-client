@@ -13,11 +13,8 @@
 #ifndef MOVEMENT_H
     #define MOVEMENT_H
         
-        #include <Motor.h>
-        #include <stdlib.h>
         #include <FreeRTOS.h>
         #include <task.h>
-        #include <stdint.h>
         #include "line_detection.h"
         #include "smqtt.h"
     
@@ -32,17 +29,18 @@
         extern const float p_coefficient;
         extern position robot_position;
         
-        // Blocking calls
-        void move_to_next_intersection(uint8_t speed);
-        void rotate_and_center(int dir, uint8_t speed);
+        // Blocking functions
+        void move_to_next(uint8_t speed);
+        void rotate_to(int dir, uint8_t speed);
+        void complete_track(uint8_t speed);
         
-        // Non-blocking calls
+        // Non-blocking functions
         void send_coords();
         void motor_tank_turn(int side, uint8_t speed);
         void motor_turn_diff(uint8_t speed, int diff);
-        void motor_rotate_next(int side, uint8_t speed);
+        void motor_rotate(int side, uint8_t speed);
         
-        // Motor control
+        // Direct motor control
         int motor_enabled();
         void motor_reset();
         void set_motor_state(int state);

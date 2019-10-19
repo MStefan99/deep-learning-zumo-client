@@ -14,6 +14,7 @@
 
 
 const int tile_size = 20;
+const int pos_fix = 5;
 
 
 void send_obstacle(tile t) {
@@ -26,30 +27,30 @@ void send_obstacle(tile t) {
 void pre_scan(uint8_t speed) {
     tile t;
 
-    rotate_and_center(3, speed);
+    rotate_to(3, speed);
     for (int i = 0; i < 3; ++i){
-        move_to_next_intersection(speed);
+        move_to_next(speed);
     }
     send_coords();
 
     for (int i = 0; i < 6; ++i) {
-        rotate_and_center(0, speed);
+        rotate_to(0, speed);
         t = scan();
         send_obstacle(t);
-        rotate_and_center(1, speed);
-        move_to_next_intersection(speed);
+        rotate_to(1, speed);
+        move_to_next(speed);
         send_coords();
     }
-    rotate_and_center(0, speed);
+    rotate_to(0, speed);
     t = scan();
     send_obstacle(t);
-    rotate_and_center(3, speed);
+    rotate_to(3, speed);
 
     for (int i = 0; i < 3; ++i){
-        move_to_next_intersection(speed);
+        move_to_next(speed);
     }
     send_coords();
-    rotate_and_center(0, speed);
+    rotate_to(0, speed);
 }
 
 
@@ -59,7 +60,7 @@ tile scan() {
     double std_dev = 0;
     measure_distance(&dist, &std_dev, 5);
 
-    int dist_tiles = dist / tile_size;
+    int dist_tiles = (dist - (double)pos_fix) / tile_size;
 
     if (dist_tiles > 0 && dist_tiles < 5 && std_dev < tile_size / 4) {
         switch (robot_position.dir) {
@@ -85,8 +86,8 @@ tile scan() {
                 Beep(50, 50);
                 vTaskDelay(150);
             }
+            vTaskDelay(1500 - 200 * dist_tiles);
         }
-        vTaskDelay(1500 - 200 * dist_tiles);
     } else {
         t.x = -100;
         t.y = -100;
