@@ -32,12 +32,12 @@ mqtt_message buf_in;
 
 void SMQTTReceive(MessageData *msg) {
     uint8_t i;
-    for (i = 0; i < msg->topicName->lenstring.len; ++i) {
+    for (i = 0; i < msg->topicName->lenstring.len && i < MESSAGE_SIZE; ++i) {
         buf_in.topic[i] = msg->topicName->lenstring.data[i];
     }
     buf_in.topic[i] = 0;
     
-    for (i = 0; i < msg->message->payloadlen; ++i) {
+    for (i = 0; i < msg->message->payloadlen && i < MESSAGE_SIZE; ++i) {
         buf_in.message[i] = ((char *)msg->message->payload)[i];
     }
     buf_in.message[i] = 0;
@@ -76,12 +76,12 @@ void SMQTTTask() {
 	if ((rc = MQTTConnect(&client, &connectData)) != 0)
 		printf("Return code from MQTT connect is %d\n", rc);
     
-    while (1) {
-        sub_entry s;
+    sub_entry s;
         MQTTMessage buf_m;
         buf_m.qos = QOS0;
         buf_m.retained = 0;
-        
+    
+    while (1) {
         if (xQueueReceive(out_q, (void *)&buf_out, 0) == pdTRUE) {
             buf_m.payload = buf_out.message;
             buf_m.payloadlen = strlen(buf_out.message);
@@ -110,8 +110,11 @@ int mqtt_print(char *topic, char *format, ...) {
     int n = vsnprintf(buf, MESSAGE_SIZE, format, va);
     va_end(va);
     mqtt_message msg;
-    strcpy(msg.topic, topic);
-    strcpy(msg.message, buf);
+    strncpy(msg.topic, topic, MESSAGE_SIZE);
+    strncpy(msg.message, buf, MESSAGE_SIZE);
+    
+    msg.topic[MESSAGE_SIZE - 1] = 0;
+    msg.message[MESSAGE_SIZE - 1] = 0;
     
     mqtt_send(msg);
     return n;
@@ -121,7 +124,9 @@ int mqtt_print(char *topic, char *format, ...) {
 int mqtt_sub(char *topicFilter) {
     sub_entry s;
     s.sub = 1;
-    strcpy(s.topic, topicFilter);
+    strncpy(s.topic, topicFilter, MESSAGE_SIZE);
+    s.topic[MESSAGE_SIZE - 1] = 0;
+    
     return xQueueSendToBack(sub_q, (void *)&s, 0);
 }
 
@@ -129,7 +134,9 @@ int mqtt_sub(char *topicFilter) {
 int mqtt_unsub(char *topicFilter) {
     sub_entry s;
     s.sub = 0;
-    strcpy(s.topic, topicFilter);
+    strncpy(s.topic, topicFilter, MESSAGE_SIZE);
+    s.topic[MESSAGE_SIZE - 1] = 0;
+    
     return xQueueSendToBack(sub_q, (void *)&s, 0);
 }
 
