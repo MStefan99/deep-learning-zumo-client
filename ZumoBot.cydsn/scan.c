@@ -35,14 +35,14 @@ void pre_scan(uint8_t speed) {
 
     for (int i = 0; i < 6; ++i) {
         rotate_to(0, speed);
-        t = scan();
+        scan(&t);
         send_obstacle(t);
         rotate_to(1, speed);
         move_to_next(speed);
         send_coords();
     }
     rotate_to(0, speed);
-    t = scan();
+    scan(&t);
     send_obstacle(t);
     rotate_to(3, speed);
 
@@ -54,8 +54,9 @@ void pre_scan(uint8_t speed) {
 }
 
 
-tile scan() {
-    tile t = {robot_position.x, robot_position.y};
+int scan(tile *t) {
+    t->x = robot_position.x;
+    t->y = robot_position.y;
     double dist = 0;
     double std_dev = 0;
     measure_distance(&dist, &std_dev, 5);
@@ -69,19 +70,19 @@ tile scan() {
     if (dist_tiles < 5 && std_dev < tile_size / 4) {
         switch (robot_position.dir) {
             case 0:
-                t.y -= dist_tiles;
+                t->y -= dist_tiles;
                 break;
 
             case 1:
-                t.x += dist_tiles;
+                t->x += dist_tiles;
                 break;
 
             case 2:
-                t.y += dist_tiles;
+                t->y += dist_tiles;
                 break;
 
             case 3:
-                t.x -= dist_tiles;
+                t->x -= dist_tiles;
                 break;
         }
 
@@ -93,14 +94,14 @@ tile scan() {
             vTaskDelay(1500 - 200 * dist_tiles);
         }
     } else {
-        t.x = -100;
-        t.y = -100;
+        t->x = -100;
+        t->y = -100;
         if (SOUND_ENABLED) {
             Beep(300, 50);
             vTaskDelay(1200);
         }
     }
-    return t;
+    return dist_tiles;
 }
 
 

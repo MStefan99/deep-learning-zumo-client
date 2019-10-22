@@ -19,10 +19,6 @@
     #include "Ultra.h"
     #include "Nunchuk.h"
     #include "Reflectance.h"
-    #include "Gyro.h"
-    #include "Accel_magnet.h"
-    #include "LSM303D.h"
-    #include "IR.h"
     #include "Beep.h"
     #include <time.h>
     #include <sys/time.h>

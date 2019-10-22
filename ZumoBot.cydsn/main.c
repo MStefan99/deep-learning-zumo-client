@@ -2,8 +2,8 @@
 
 
 int zmain(void) {
-    CyGlobalIntEnable;  // Enable global interrupts.
-    Button_Interrupt_StartEx(button_isr);  // Link button interrupt to isr
+    CyGlobalIntEnable;
+    Button_Interrupt_StartEx(button_isr);
     LED_Interrupt_StartEx(led_isr);
     
     reflectance_start();
@@ -45,8 +45,10 @@ int zmain(void) {
             case 3:
                 if (motor_enabled()) {
                     vTaskDelay(5000);
-                    
                     mqtt_print("Info/Zumo", "Pre-scan started");
+                    
+                    move_to_next(speed);
+                    move_to_next(speed);
                     pre_scan(speed);
                 }
                 
@@ -73,11 +75,17 @@ int zmain(void) {
                         sscanf(msg.message, "%i", &action);
                         mqtt_print("Ack/Zumo", "Action");
                         rotate_to(action, speed);
-                        move_to_next(speed);
-                        t = scan();
+                        int dist = scan(&t);
+                        send_obstacle(t);
+                        if (dist > 1) {
+                            move_to_next(speed);
+                            mqtt_print("Zumo/Move", "%i", action);
+                        } else {
+                            mqtt_print("Zumo/Move", "-1");
+                        }
+                        scan(&t);
                         send_obstacle(t);
                         
-                        mqtt_print("Zumo/Move", "%i", action);
                     }
                 }
             break;

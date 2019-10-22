@@ -13,7 +13,7 @@
 #include "movement.h"
 
 const float p_coefficient = 1.5;
-position robot_position = {3, 10, 0};
+position robot_position = {3, 12, 0};
 
 
 void send_coords() {

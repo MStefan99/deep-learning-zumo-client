@@ -35,7 +35,7 @@
     
     
     void pre_scan(uint8_t speed);
-    tile scan();
+    int scan(tile *t);
     void send_obstacle(tile t);
     void measure_distance(double *dist, double *std_deviation, int count);
     
