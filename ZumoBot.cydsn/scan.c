@@ -112,7 +112,7 @@ void measure_distance(double *dist, double *std_deviation, int count) {
     float dev;
 
     for (int i = 0; i < count; ++i) {
-        m[i] = (double)Ultra_GetDistance();
+        m[i] = vl53l0x_measure();
         vTaskDelay(2);
     }
 

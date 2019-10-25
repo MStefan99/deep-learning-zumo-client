@@ -15,8 +15,8 @@
 #define SCAN_H_
     
     #include "movement.h"
-    #include "Ultra.h"
     #include "FreeRTOS.h"
+    #include "vl53l0x.h"
     #include "task.h"
     #include "stat.h"
     #include "smqtt.h"

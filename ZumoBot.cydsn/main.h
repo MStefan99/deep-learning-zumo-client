@@ -16,8 +16,8 @@
     #include <project.h>
     #include "FreeRTOS.h"
     #include "task.h"
-    #include "Ultra.h"
     #include "Nunchuk.h"
+    #include "vl53l0x.h"
     #include "Reflectance.h"
     #include "Beep.h"
     #include <time.h>
@@ -32,8 +32,6 @@
     #include <stdbool.h>
     #include "stat.h"
     #include "scan.h"
-    #include "vl53l0x_api.h"
-    #include "vl53l0x_i2c_platform.h"
 
     
     typedef struct {
