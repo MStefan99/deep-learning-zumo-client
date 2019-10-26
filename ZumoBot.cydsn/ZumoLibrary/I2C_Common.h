@@ -13,7 +13,7 @@
     #include "I2C_2.h"
     #include <stdio.h>
     
-    #define I2C_DEBUG 1
+    #define I2C_DEBUG 0
 
     
     uint8_t I2C_Write(uint8_t device, uint8_t regAdd, uint8_t data);

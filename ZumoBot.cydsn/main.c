@@ -13,6 +13,8 @@ int zmain(void) {
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     LED_Timer_Start();
+    
+    vl53l0x_check();
     vl53l0x_init();
     
     mqtt_sub("Net/#");
