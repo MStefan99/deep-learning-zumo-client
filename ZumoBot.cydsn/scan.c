@@ -13,8 +13,8 @@
 #include "scan.h"
 
 
-const int tile_size = 20;
-const int pos_fix = 5;
+const int tile_size = 200; //mm
+const int pos_fix = 50; //mm
 
 
 void send_obstacle(tile t) {
@@ -67,7 +67,7 @@ int scan(tile *t) {
         dist_tiles = 1;
     }
 
-    if (dist_tiles < 5 && std_dev < tile_size / 4) {
+    if (dist_tiles <= 6 && std_dev < tile_size / 4) {
         switch (robot_position.dir) {
             case 0:
                 t->y -= dist_tiles;
@@ -91,7 +91,7 @@ int scan(tile *t) {
                 Beep(50, 50);
                 vTaskDelay(150);
             }
-            vTaskDelay(1500 - 200 * dist_tiles);
+            vTaskDelay(3000 - 200 * dist_tiles);
         }
     } else {
         t->x = -100;

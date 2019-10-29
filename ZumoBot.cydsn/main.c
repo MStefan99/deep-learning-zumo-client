@@ -75,18 +75,17 @@ int zmain(void) {
                     } else if (strstr(msg.topic, "Net/Action")) {
                         sscanf(msg.message, "%i", &action);
                         mqtt_print("Ack/Zumo", "Action");
+                        
                         rotate_to(action, speed);
                         int dist = scan(&t);
                         send_obstacle(t);
+                        
                         if (dist > 1) {
                             move_to_next(speed);
                             mqtt_print("Zumo/Move", "%i", action);
                         } else {
                             mqtt_print("Zumo/Move", "-1");
                         }
-                        scan(&t);
-                        send_obstacle(t);
-                        
                     }
                 }
             break;
@@ -175,7 +174,7 @@ CY_ISR(led_isr) {
 
 void voltage_check() {
     if (!voltage_test() && !low_voltage_detected) {
-        mqtt_print("Info/Zumo/WARNING", "Low voltage!");
+        mqtt_print("Info/Zumo/WARNING", "Low voltage: %3.2fV!", battery_voltage());
         low_voltage_detected = true;
         change_state(8);
     } else if (voltage_test() && low_voltage_detected) {
