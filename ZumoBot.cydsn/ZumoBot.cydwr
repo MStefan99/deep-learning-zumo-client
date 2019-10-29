@@ -590,11 +590,13 @@
       <Data key="3c4c75be-c3cd-4e77-917f-03004b68e3f6" value="L2" />
       <Data key="3d783707-4f1b-4a3e-926d-7f0262403b7b" value="Pin_2" />
       <Data key="5abeb632-31e8-4c9e-b34d-9982f42a83a5" value="L1" />
+      <Data key="6ae76c69-df81-4ef7-9eff-a08c1b3021c5" value="SDA_2" />
       <Data key="7dede1e4-4948-49c1-a9c8-b2ccd5ac1a75" value="SDA_2" />
       <Data key="7fdab7d2-e1a9-417e-b842-3b06015e63c8" value="MotorPwmRight" />
       <Data key="8a898d81-9f9c-4a54-8b1f-54d06a82da14" value="Trig" />
       <Data key="8d318d8b-cf7b-4b6b-b02c-ab1c5c49d0ba" value="IR_receiver" />
       <Data key="30d95b7a-e53e-40ea-afec-237357e734ed" value="RX_E" />
+      <Data key="34b42576-e725-4f16-acb6-6f66f2134062" value="RST_1" />
       <Data key="51a8516c-2c14-41a9-bc08-2d7b6b038b81" value="Pin_1" />
       <Data key="59fcf6b7-74f2-4a92-9fc5-c7f5d998d830" value="Refl_led" />
       <Data key="96df8229-00b2-41fb-818c-aa942b1cde3d" value="BatteryLed" />
@@ -608,6 +610,7 @@
       <Data key="b70f6388-00b4-482a-92bc-89b706bec690" value="TX_E" />
       <Data key="ba6a84c7-ed85-43b5-bb8b-2ae11f2c92cf" value="SCL_2" />
       <Data key="bc9bbc67-d7f8-43cb-80c9-9415958ddc6b/16a808f6-2e13-45b9-bce0-b001c8655113" value="ADC_Battery_Bypass" />
+      <Data key="c5cc2da4-326a-4aa5-8580-8be010c458c3" value="SCL_2" />
       <Data key="cd6f6d8d-0413-4668-86e5-6df22d2714d0" value="Buzzer" />
       <Data key="cd997344-d07d-4095-831b-589b8491bc10" value="L3" />
       <Data key="d51831d1-fc3e-4c6f-a3ee-7924d2209086" value="Pin_A4" />
@@ -3746,6 +3749,11 @@
         <Data key="Port Format" value="3,4" />
       </Group>
     </Group>
+    <Group key="6ae76c69-df81-4ef7-9eff-a08c1b3021c5">
+      <Group key="0">
+        <Data key="Port Format" value="12,3" />
+      </Group>
+    </Group>
     <Group key="7dede1e4-4948-49c1-a9c8-b2ccd5ac1a75">
       <Group key="0">
         <Data key="Port Format" value="1,5" />
@@ -3843,6 +3851,11 @@
     <Group key="bc9bbc67-d7f8-43cb-80c9-9415958ddc6b/16a808f6-2e13-45b9-bce0-b001c8655113">
       <Group key="0">
         <Data key="Port Format" value="0,2" />
+      </Group>
+    </Group>
+    <Group key="c5cc2da4-326a-4aa5-8580-8be010c458c3">
+      <Group key="0">
+        <Data key="Port Format" value="12,2" />
       </Group>
     </Group>
     <Group key="cd6f6d8d-0413-4668-86e5-6df22d2714d0">

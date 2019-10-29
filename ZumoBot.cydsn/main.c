@@ -2,17 +2,18 @@
 
 
 int zmain(void) {
+    BatteryLed_Write(1);
+    
     CyGlobalIntEnable;
     Button_Interrupt_StartEx(button_isr);
     LED_Interrupt_StartEx(led_isr);
     
     reflectance_start();
     UART_1_Start(); 
-    Ultra_Start();
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     LED_Timer_Start();
-    BatteryLed_Write(1);
+    vl53l0x_init();
     
     mqtt_sub("Net/#");
     mqtt_print("Zumo/Status", "Boot");
