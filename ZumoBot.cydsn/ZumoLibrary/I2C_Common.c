@@ -54,7 +54,7 @@ void I2C_Read_Multiple(uint8_t device, uint8_t startAdd, uint8_t* data, uint8_t 
     I2C_MasterWriteBuf(device, &startAdd, 1, I2C_MODE_COMPLETE_XFER); // one complete byte transfer to establish address to be read
     while((I2C_MasterStatus() & I2C_MSTAT_WR_CMPLT) == 0); //Check status and make sure it has completed
     I2C_MasterClearStatus(); // clear any pending status flags
-    I2C_MasterReadBuf(device, data, count, I2C_MODE_COMPLETE_XFER);//  complete byte/multi-byte receive
+    I2C_MasterReadBuf(device, data, count, I2C_MODE_COMPLETE_XFER);//  complete byte/multi-byte read
     while((I2C_MasterStatus() & I2C_MSTAT_RD_CMPLT) == 0); //Check status and make sure it has completed
 }
 
@@ -68,7 +68,7 @@ void I2C_2_Read_Multiple(uint8_t device, uint8_t startAdd, uint8_t* data, uint8_
     I2C_2_MasterWriteBuf(device, &startAdd, 1, I2C_2_MODE_COMPLETE_XFER); // one complete byte transfer to establish address to be read
     while((I2C_2_MasterStatus() & I2C_2_MSTAT_WR_CMPLT) == 0); //Check status and make sure it has completed
     I2C_2_MasterClearStatus(); // clear any pending status flags
-    I2C_2_MasterReadBuf(device, data, count, I2C_2_MODE_COMPLETE_XFER);//  complete byte/multi-byte receive
+    I2C_2_MasterReadBuf(device, data, count, I2C_2_MODE_COMPLETE_XFER); //  complete byte/multi-byte read
     while((I2C_2_MasterStatus() & I2C_2_MSTAT_RD_CMPLT) == 0); //Check status and make sure it has completed
     
     if (I2C_DEBUG) {
@@ -85,11 +85,12 @@ void I2C_2_Write_Multiple(uint8_t device, uint8_t startAdd, uint8_t* data, uint8
         printf("Writing data to device %#04x, register %#04x...\n", device, startAdd);
     }
     
+    uint8_t wrbuf[count + 1];
+    memcpy(wrbuf + 1, data, count);
+    wrbuf[0] = startAdd;
+    
     I2C_2_MasterClearStatus(); // clear any pending status flags
-    I2C_2_MasterWriteBuf(device, &startAdd, 1, I2C_2_MODE_COMPLETE_XFER);  // one complete byte transfer to establish address to be written
-    while((I2C_2_MasterStatus() & I2C_2_MSTAT_WR_CMPLT) == 0); // Check status and make sure it has completed
-    I2C_2_MasterClearStatus(); // clear any pending status flags
-    I2C_2_MasterWriteBuf(device, data, count, I2C_2_MODE_COMPLETE_XFER);  // complete byte/multi-byte receive
+    I2C_2_MasterWriteBuf(device, wrbuf, count + 1, I2C_2_MODE_COMPLETE_XFER);  //  complete byte/multi-byte write
     while((I2C_2_MasterStatus() & I2C_2_MSTAT_WR_CMPLT) == 0); // Check status and make sure it has completed
     
     if (I2C_DEBUG) {
