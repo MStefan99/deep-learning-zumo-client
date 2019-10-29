@@ -23,7 +23,7 @@ VL53L0X_DeviceInfo_t DeviceInfo;
 void print_vl53l0x_error(VL53L0X_Error Status){
     char buf[VL53L0X_MAX_STRING_LENGTH];
     VL53L0X_GetPalErrorString(Status, buf);
-    printf("API Status: %i : %s\n", Status, buf);
+    printf("VL53L0X API Error: %i : %s\n", Status, buf);
 }
 
 
@@ -47,14 +47,22 @@ void vl53l0x_check() {
 }
 
 
-void vl53l0x_init() {
+int vl53l0x_init() {
     I2C_2_Start();
     
     int status_int = 0;
+    VL53L0X_Error Status = VL53L0X_ERROR_NONE;
+    uint32_t refSpadCount;
+    uint8_t isApertureSpads;
+    uint8_t VhvSettings;
+    uint8_t PhaseCal;
+    
+    
     
     MyDevice.I2cDevAddr = 0x52;
     MyDevice.comms_type = 1;
     MyDevice.comms_speed_khz = 100;
+    
     
     if(Status == VL53L0X_ERROR_NONE) {
         status_int = VL53L0X_GetVersion(&Version);
@@ -63,39 +71,72 @@ void vl53l0x_init() {
         }
     }
     
-    
     if(Status == VL53L0X_ERROR_NONE) {
-        printf ("Calling VL53L0X_DataInit\n");
         Status = VL53L0X_DataInit(&MyDevice); // Data initialization
+    } else {
         print_vl53l0x_error(Status);
     }
     
     if(Status == VL53L0X_ERROR_NONE) {
-        printf ("Calling VL53L0X_GetDeviceInfo\n");
         Status = VL53L0X_GetDeviceInfo(&MyDevice, &DeviceInfo);
+    } else {
+        print_vl53l0x_error(Status);
+    }
+    
+    if(Status == VL53L0X_ERROR_NONE && (DeviceInfo.ProductRevisionMinor != 1) && (DeviceInfo.ProductRevisionMinor != 1)) {
+    	Status = VL53L0X_ERROR_NOT_SUPPORTED;
         print_vl53l0x_error(Status);
     }
     
     if(Status == VL53L0X_ERROR_NONE) {
-        printf("VL53L0X_GetDeviceInfo:\n");
-        printf("Device Name : %s\n", DeviceInfo.Name);
-        printf("Device Type : %s\n", DeviceInfo.Type);
-        printf("Device ID : %s\n", DeviceInfo.ProductId);
-        printf("ProductRevisionMajor : %d\n", DeviceInfo.ProductRevisionMajor);
-        printf("ProductRevisionMinor : %d\n", DeviceInfo.ProductRevisionMinor);
-
-        if((DeviceInfo.ProductRevisionMinor != 1) && (DeviceInfo.ProductRevisionMinor != 1)) {
-        	printf("Error expected cut 1.1 but found cut %d.%d\n",
-        			DeviceInfo.ProductRevisionMajor, DeviceInfo.ProductRevisionMinor);
-        	Status = VL53L0X_ERROR_NOT_SUPPORTED;
-        }
+        Status = VL53L0X_StaticInit(&MyDevice); // Device Initialization
+        // StaticInit will set interrupt by default
+    } else {
+        print_vl53l0x_error(Status);
     }
-    print_vl53l0x_error(Status);
+    
+    if(Status == VL53L0X_ERROR_NONE) {
+        Status = VL53L0X_PerformRefCalibration(&MyDevice, &VhvSettings, &PhaseCal); // Device Initialization
+    } else {
+        print_vl53l0x_error(Status);
+    }
+
+    if(Status == VL53L0X_ERROR_NONE) {
+        Status = VL53L0X_PerformRefSpadManagement(&MyDevice, &refSpadCount, &isApertureSpads); // Device Initialization
+    } else {
+        print_vl53l0x_error(Status);
+    }
+
+    if(Status == VL53L0X_ERROR_NONE) {
+        Status = VL53L0X_SetDeviceMode(&MyDevice, VL53L0X_DEVICEMODE_CONTINUOUS_RANGING); // Setup in single ranging mode
+    } else {
+        print_vl53l0x_error(Status);
+    }
+    
+    if(Status == VL53L0X_ERROR_NONE) {
+		Status = VL53L0X_StartMeasurement(&MyDevice);
+    } else {
+        print_vl53l0x_error(Status);
+    }
+    
+    if (Status != VL53L0X_ERROR_NONE) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 
 int vl53l0x_measure() {
-    return 0;
+    uint16_t dist = -1;
+    VL53L0X_RangingMeasurementData_t RangingMeasurementData;
+    
+    if(Status == VL53L0X_ERROR_NONE) {
+        Status = VL53L0X_GetRangingMeasurementData(&MyDevice, &RangingMeasurementData);
+
+        dist = RangingMeasurementData.RangeMilliMeter;
+    }
+    return dist;
 }
 
 /* [] END OF FILE */

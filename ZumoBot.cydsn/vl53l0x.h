@@ -18,9 +18,8 @@
     #include "vl53l0x_platform.h"
     
     
-    void vl53l0x_init();
+    int vl53l0x_init();
     int vl53l0x_measure();
-    
     
     void vl53l0x_check();
     
