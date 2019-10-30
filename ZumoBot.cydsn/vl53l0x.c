@@ -57,12 +57,10 @@ int vl53l0x_init() {
     uint8_t VhvSettings;
     uint8_t PhaseCal;
     
-    
-    
+    // I2C init
     MyDevice.I2cDevAddr = 0x52;
     MyDevice.comms_type = 1;
     MyDevice.comms_speed_khz = 400;
-    
     
     if(Status == VL53L0X_ERROR_NONE) {
         status_int = VL53L0X_GetVersion(&Version);
@@ -72,7 +70,7 @@ int vl53l0x_init() {
     }
     
     if(Status == VL53L0X_ERROR_NONE) {
-        Status = VL53L0X_DataInit(&MyDevice); // Data initialization
+        Status = VL53L0X_DataInit(&MyDevice);
     } else {
         print_vl53l0x_error(Status);
     }
@@ -89,30 +87,30 @@ int vl53l0x_init() {
     }
     
     if(Status == VL53L0X_ERROR_NONE) {
-        Status = VL53L0X_StaticInit(&MyDevice); // Device Initialization
-        // StaticInit will set interrupt by default
+        Status = VL53L0X_StaticInit(&MyDevice);
     } else {
         print_vl53l0x_error(Status);
     }
     
     if(Status == VL53L0X_ERROR_NONE) {
-        Status = VL53L0X_PerformRefCalibration(&MyDevice, &VhvSettings, &PhaseCal); // Device Initialization
+        Status = VL53L0X_PerformRefCalibration(&MyDevice, &VhvSettings, &PhaseCal);
     } else {
         print_vl53l0x_error(Status);
     }
 
     if(Status == VL53L0X_ERROR_NONE) {
-        Status = VL53L0X_PerformRefSpadManagement(&MyDevice, &refSpadCount, &isApertureSpads); // Device Initialization
+        Status = VL53L0X_PerformRefSpadManagement(&MyDevice, &refSpadCount, &isApertureSpads);
     } else {
         print_vl53l0x_error(Status);
     }
 
     if(Status == VL53L0X_ERROR_NONE) {
-        Status = VL53L0X_SetDeviceMode(&MyDevice, VL53L0X_DEVICEMODE_CONTINUOUS_RANGING); // Setup in single ranging mode
+        Status = VL53L0X_SetDeviceMode(&MyDevice, VL53L0X_DEVICEMODE_SINGLE_RANGING);
     } else {
         print_vl53l0x_error(Status);
     }
     
+    // Final check
     if(Status == VL53L0X_ERROR_NONE) {
 		Status = VL53L0X_StartMeasurement(&MyDevice);
     } else {
@@ -132,11 +130,15 @@ int vl53l0x_measure() {
     VL53L0X_RangingMeasurementData_t RangingMeasurementData;
     
     if(Status == VL53L0X_ERROR_NONE) {
-        Status = VL53L0X_GetRangingMeasurementData(&MyDevice, &RangingMeasurementData);
-
+        Status = VL53L0X_PerformSingleRangingMeasurement(&MyDevice, &RangingMeasurementData);
         dist = RangingMeasurementData.RangeMilliMeter;
     }
-    return dist;
+    
+    if (Status == VL53L0X_ERROR_NONE && dist < 8100) {
+        return dist;
+    } else {
+        return -1;
+    }
 }
 
 /* [] END OF FILE */

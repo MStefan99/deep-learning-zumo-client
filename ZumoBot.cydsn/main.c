@@ -80,7 +80,7 @@ int zmain(void) {
                         int dist = scan(&t);
                         send_obstacle(t);
                         
-                        if (dist > 1) {
+                        if (dist < 0 || dist > 1) {
                             move_to_next(speed);
                             mqtt_print("Zumo/Move", "%i", action);
                         } else {

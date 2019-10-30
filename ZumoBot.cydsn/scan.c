@@ -55,19 +55,24 @@ void pre_scan(uint8_t speed) {
 
 
 int scan(tile *t) {
-    t->x = robot_position.x;
-    t->y = robot_position.y;
+    t->x = -100;
+    t->y = -100;
     double dist = 0;
     double std_dev = 0;
-    measure_distance(&dist, &std_dev, 5);
-
+    
+    measure_distance(&dist, &std_dev, 10);
     int dist_tiles = (dist - (double)pos_fix) / tile_size;
     
-    if (!dist_tiles) {
+    if (dist < 0) {
+        dist_tiles = -1;
+    } else if (!dist_tiles) {
         dist_tiles = 1;
     }
 
-    if (dist_tiles <= 6 && std_dev < tile_size / 4) {
+    if (dist_tiles > 0 && dist_tiles <= 6 && std_dev < tile_size / 4) {
+        t->x = robot_position.x;
+        t->y = robot_position.y;
+        
         switch (robot_position.dir) {
             case 0:
                 t->y -= dist_tiles;
@@ -85,7 +90,6 @@ int scan(tile *t) {
                 t->x -= dist_tiles;
                 break;
         }
-
         if (SOUND_ENABLED){
             for (int i = 0; i < dist_tiles; ++i) {
                 Beep(50, 50);
@@ -94,8 +98,6 @@ int scan(tile *t) {
             vTaskDelay(3000 - 200 * dist_tiles);
         }
     } else {
-        t->x = -100;
-        t->y = -100;
         if (SOUND_ENABLED) {
             Beep(300, 50);
             vTaskDelay(1200);
@@ -107,9 +109,9 @@ int scan(tile *t) {
 
 void measure_distance(double *dist, double *std_deviation, int count) {
     double m[count];
-    float exp;
-    float var;
-    float dev;
+    double exp;
+    double var;
+    double dev;
 
     for (int i = 0; i < count; ++i) {
         m[i] = vl53l0x_measure();
