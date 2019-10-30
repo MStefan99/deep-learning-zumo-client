@@ -61,7 +61,7 @@ int vl53l0x_init() {
     
     MyDevice.I2cDevAddr = 0x52;
     MyDevice.comms_type = 1;
-    MyDevice.comms_speed_khz = 100;
+    MyDevice.comms_speed_khz = 400;
     
     
     if(Status == VL53L0X_ERROR_NONE) {
