@@ -21,7 +21,7 @@
 
     void I2C_Read_Multiple(uint8_t device, uint8_t start_regAdd, uint8_t *data, uint8_t count);
     
-    void I2C_2_Read_Multiple(uint8_t device, uint8_t start_regAdd, uint8_t *data, uint8_t count);
-    void I2C_2_Write_Multiple(uint8_t device, uint8_t startAdd, uint8_t *data, uint8_t count);
+    int I2C_2_Read_Multiple(uint8_t device, uint8_t start_regAdd, uint8_t *data, uint8_t count);
+    int I2C_2_Write_Multiple(uint8_t device, uint8_t startAdd, uint8_t *data, uint8_t count);
 
 #endif
