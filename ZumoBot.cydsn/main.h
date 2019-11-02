@@ -24,7 +24,6 @@
     #include <sys/time.h>
     #include "serial1.h"
     #include <unistd.h>
-    #include "voltage.h"
     #include "line_detection.h"
     #include "log.h"
     #include "movement.h"

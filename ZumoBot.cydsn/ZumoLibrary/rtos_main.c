@@ -39,6 +39,7 @@
 #include "debug_uart.h"
 #include "zumo_config.h"
 #include "smqtt.h"
+#include "voltage.h"
 
 #ifndef START_MQTT
 #define START_MQTT 0
@@ -77,6 +78,7 @@ int main( void )
   	//( void ) xTaskCreate( DebugUartTask, "DbgUart", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
   	//( void ) xTaskCreate( DebugCommandTask, "DbgCmd", configMINIMAL_STACK_SIZE * 3, NULL, tskIDLE_PRIORITY + 1, NULL );
   	xTaskCreate( start_zmain, "Zumo", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL );
+    xTaskCreate(voltage_task, "Voltage check", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
 #if START_MQTT == 1
     xTaskCreate( SMQTTTask, "SMQTTTASK", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL );
 #endif    

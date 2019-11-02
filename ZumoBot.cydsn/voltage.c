@@ -40,7 +40,10 @@ int voltage_test() {
 
 
 void voltage_task() {
-    while(1){
+    ADC_Battery_Start();
+    ADC_Battery_StartConvert();
+    
+    while (1) {
         if (voltage_test() && !low_voltage_detected) {
             mqtt_print("Info/Zumo/WARNING", "Low voltage: %3.2fV!", battery_voltage());
             low_voltage_detected = true;

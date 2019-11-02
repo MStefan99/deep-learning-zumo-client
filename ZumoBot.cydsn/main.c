@@ -11,10 +11,7 @@ int zmain(void) {
     reflectance_start();
     UART_1_Start(); 
     vl53l0x_init();
-    ADC_Battery_Start();
-    ADC_Battery_StartConvert();
     LED_Timer_Start();
-    xTaskCreate(voltage_task, "Voltage check", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
     
     mqtt_sub("Net/#");
     mqtt_print("Zumo/Status", "Boot");

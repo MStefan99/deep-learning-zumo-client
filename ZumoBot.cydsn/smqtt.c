@@ -34,7 +34,6 @@ mqtt_message buf_in;
 
 
 void SMQTTReceive(MessageData *msg) {
-    uint8_t i;
     strncpy(buf_in.topic, msg->topicName->lenstring.data, MESSAGE_SIZE);
     strncpy(buf_in.message, msg->message->payload, MESSAGE_SIZE);
     
