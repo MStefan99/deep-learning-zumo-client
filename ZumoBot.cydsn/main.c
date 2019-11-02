@@ -7,69 +7,66 @@ int zmain(void) {
     CyGlobalIntEnable;
     Button_Interrupt_StartEx(button_isr);
     LED_Interrupt_StartEx(led_isr);
-    
-    reflectance_start();
-    UART_1_Start(); 
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     LED_Timer_Start();
+    while(voltage_test());  // Wait for power to continue
+    
+    reflectance_start();
+    UART_1_Start(); 
     vl53l0x_init();
     
     mqtt_sub("Net/#");
     mqtt_print("Zumo/Status", "Boot");
-    change_state(0);
+    change_state(BOOT_IDLE_STATE);
     
     while (1) {
         voltage_check();
         
         switch (current_state) {
-            case 0: 
+            case BOOT_IDLE_STATE: 
                 vTaskDelay(1000);
             break;
                 
-            case 1:
+            case CLB_IDLE_STATE:
                 if (!calibrated) { 
                     calibrate();
                     calibrated = true;
                 }
             break;
             
-            case 2:
+            case WAIT_STATE:
                 if (mqtt_receive(&msg) && strstr(msg.topic, "Net/Status") && strstr(msg.message, "Ready")) {
-                    change_state(3);
+                    change_state(PRESCAN_STATE);
                     mqtt_print("Ack/Zumo" , "Ready");
                     mqtt_print("Zumo/Status", "Ready");
                 }
                 vTaskDelay(1000);
             break;   
                 
-            case 3:
-                if (motor_enabled()) {
-                    vTaskDelay(5000);
-                    mqtt_print("Info/Zumo", "Pre-scan started");
-                    
-                    move_to_next(speed);
-                    move_to_next(speed);
-                    pre_scan(speed);
-                }
+            case PRESCAN_STATE:
+                vTaskDelay(5000);
+                mqtt_print("Info/Zumo", "Pre-scan started");
                 
-                if (motor_enabled()) {
-                    mqtt_print("Zumo/Status", "Ready");
-                    change_state(4);
-                }
+                move_to_next(speed);
+                move_to_next(speed);
+                pre_scan(speed);
+                
+                mqtt_print("Zumo/Status", "Ready");
+                change_state(NAV_STATE);
                 vTaskDelay(1000);
             break;
             
-            case 4:
+            case NAV_STATE:
                 if (mqtt_receive(&msg)) { 
                     mqtt_print("Rec/Zumo", "Rec on \"%s\"", msg.topic);
                     if (strstr(msg.topic, "Net/Status")) {
                         if (strstr(msg.message, "Finish")) {
                             mqtt_print("Ack/Zumo", "Finish");
-                            change_state(5);
+                            change_state(CMP_NAV_STATE);
                         } else if (strstr(msg.message, "Stuck")) {
                             mqtt_print("Ack/Zumo", "Stuck");
-                            change_state(6);
+                            change_state(FIN_IDLE_STATE);
                         }
                       
                     } else if (strstr(msg.topic, "Net/Action")) {
@@ -90,27 +87,27 @@ int zmain(void) {
                 }
             break;
             
-            case 5:
+            case CMP_NAV_STATE:
                 complete_track(speed);
-                change_state(6);
+                change_state(FIN_IDLE_STATE);
                 vTaskDelay(1000);
             break;
             
-            case 6:
+            case FIN_IDLE_STATE:
                 vTaskDelay(1000);
             break;
             
-            case 7:
+            case LOCK_STATE:
                 vTaskDelay(1000);
             break;
             
-            case 8:
+            case ERR_STATE:
                 vTaskDelay(1000);
             break;
         
             default:
                 mqtt_print("Info/Zumo/WARNING", "Undef state!");
-                change_state(8);
+                change_state(ERR_STATE);
             break;
         }
     }
@@ -122,34 +119,16 @@ void print_element(const void *element) {
 }
 
 
-void change_state(int state) {
-    if (state >= 0) {
-        if (state != current_state) {
-            prev_state = current_state;
-            current_state = state;
-        }
-    } else {
-        int t = prev_state;
-        prev_state = current_state;
-        current_state = t;
-    }
-    set_motor_state(states[current_state].movement_enabled);
-    
-    mqtt_print("Info/Zumo/State", "%s state (%i)", states[current_state].name, current_state);
-    led_state = 0;
-}
-
-
 CY_ISR(button_isr) {
-    if (current_state == 0) {
-        change_state(1);
-    } else if (current_state == 1) {
-        change_state(2);
+    if (current_state == BOOT_IDLE_STATE) {
+        change_state(CLB_IDLE_STATE);
+    } else if (current_state == CLB_IDLE_STATE) {
+        change_state(WAIT_STATE);
     } else {
         if (motor_enabled() && states[current_state].movement_enabled) {
-            change_state(7);
+            change_state(LOCK_STATE);
         } else if (current_state == 7) {
-            change_state(-1);
+            change_state(PREV_STATE);
         }
     }
     SW1_ClearInterrupt();
@@ -172,16 +151,17 @@ CY_ISR(led_isr) {
 }
 
 
-void voltage_check() {
-    if (!voltage_test() && !low_voltage_detected) {
+int voltage_check() {
+    if (voltage_test() && !low_voltage_detected) {
         mqtt_print("Info/Zumo/WARNING", "Low voltage: %3.2fV!", battery_voltage());
         low_voltage_detected = true;
-        change_state(8);
-    } else if (voltage_test() && low_voltage_detected) {
+        change_state(ERR_STATE);
+    } else if (!voltage_test() && low_voltage_detected) {
         mqtt_print("Info/Zumo/Status", "Voltage normal");
         low_voltage_detected = false;
-        change_state(-1);
+        change_state(PREV_STATE);
     }
+    return voltage_test();
 }
 
 

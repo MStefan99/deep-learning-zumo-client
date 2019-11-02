@@ -28,9 +28,9 @@ int voltage_test() {
     float voltage = battery_voltage();
         
     if (voltage > 3.8) {
-        return 1;
-    } else {
         return 0;
+    } else {
+        return 1;
     } 
 }
 
