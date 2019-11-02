@@ -11,6 +11,10 @@
 */
 #include "voltage.h"
 
+
+bool low_voltage_detected = false;
+
+
 float battery_voltage() {
     float result = 0;
     const float battery_voltage_convertion_coeffitient = 1.5;
@@ -33,5 +37,22 @@ int voltage_test() {
         return 1;
     } 
 }
+
+
+void voltage_task() {
+    while(1){
+        if (voltage_test() && !low_voltage_detected) {
+            mqtt_print("Info/Zumo/WARNING", "Low voltage: %3.2fV!", battery_voltage());
+            low_voltage_detected = true;
+            change_state(ERR_STATE);
+        } else if (!voltage_test() && low_voltage_detected) {
+            mqtt_print("Info/Zumo/Status", "Voltage normal");
+            low_voltage_detected = false;
+            change_state(PREV_STATE);
+        }
+        vTaskDelay(100);
+    }
+}
+
 
 /* [] END OF FILE */

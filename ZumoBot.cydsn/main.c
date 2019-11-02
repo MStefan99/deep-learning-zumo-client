@@ -7,22 +7,20 @@ int zmain(void) {
     CyGlobalIntEnable;
     Button_Interrupt_StartEx(button_isr);
     LED_Interrupt_StartEx(led_isr);
-    ADC_Battery_Start();
-    ADC_Battery_StartConvert();
-    LED_Timer_Start();
-    while(voltage_test());  // Wait for power to continue
     
     reflectance_start();
     UART_1_Start(); 
     vl53l0x_init();
+    ADC_Battery_Start();
+    ADC_Battery_StartConvert();
+    LED_Timer_Start();
+    xTaskCreate(voltage_task, "Voltage check", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
     
     mqtt_sub("Net/#");
     mqtt_print("Zumo/Status", "Boot");
     change_state(BOOT_IDLE_STATE);
     
     while (1) {
-        voltage_check();
-        
         switch (current_state) {
             case BOOT_IDLE_STATE: 
                 vTaskDelay(1000);
@@ -33,6 +31,7 @@ int zmain(void) {
                     calibrate();
                     calibrated = true;
                 }
+                vTaskDelay(1000);
             break;
             
             case WAIT_STATE:
@@ -137,7 +136,7 @@ CY_ISR(button_isr) {
 
 CY_ISR(led_isr) {
     ++led_state;
-    if (!states[current_state].led_timings[led_state]) {
+    if (!states[find_state(current_state)].led_timings[led_state]) {
         led_state = 0;
     }
     if (led_state % 2) {
@@ -146,22 +145,8 @@ CY_ISR(led_isr) {
         BatteryLed_Write(0);
     }
     
-    LED_Timer_WritePeriod(states[current_state].led_timings[led_state]);
+    LED_Timer_WritePeriod(states[find_state(current_state)].led_timings[led_state]);
     LED_Timer_ClearFIFO();
-}
-
-
-int voltage_check() {
-    if (voltage_test() && !low_voltage_detected) {
-        mqtt_print("Info/Zumo/WARNING", "Low voltage: %3.2fV!", battery_voltage());
-        low_voltage_detected = true;
-        change_state(ERR_STATE);
-    } else if (!voltage_test() && low_voltage_detected) {
-        mqtt_print("Info/Zumo/Status", "Voltage normal");
-        low_voltage_detected = false;
-        change_state(PREV_STATE);
-    }
-    return voltage_test();
 }
 
 

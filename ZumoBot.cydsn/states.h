@@ -31,6 +31,7 @@
         ERR_STATE
     } state_id_t;
     
+    
     typedef struct {
         state_id_t id;
         char name[32];

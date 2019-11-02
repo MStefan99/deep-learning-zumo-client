@@ -36,7 +36,6 @@
     
 
     bool calibrated = false;
-    bool low_voltage_detected = false;
     static uint8_t speed = 100;
     tile t;
     mqtt_message msg = {"", ""};
@@ -46,7 +45,6 @@
     CY_ISR_PROTO(button_isr);
     CY_ISR_PROTO(led_isr);
     void print_element(const void *element);
-    int voltage_check();
     
     #endif
 

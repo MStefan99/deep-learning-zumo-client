@@ -11,15 +11,21 @@
 */
 
 #ifndef VOLTAGE_H_
-#define VOLTAGE_H_
-    #include <project.h>
-        
-    // Returns the battery voltage 
-    float battery_voltage(); 
-
-    // Returns true if voltage is sufficient and false if not
-    int voltage_test(); 
+    #define VOLTAGE_H_
     
-#endif
+    #include <project.h>
+    #include <stdbool.h>
+    #include "states.h"
+    #include "smqtt.h"
+    
+    
+    extern bool low_voltage_detected;
+    
+    
+    float battery_voltage();
+    int voltage_test();
+    void voltage_task();
+    
+    #endif
 
 /* [] END OF FILE */
