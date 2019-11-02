@@ -14,15 +14,18 @@
 
 
 #define MAX_MESSAGE_COUNT 16
+
+
 typedef struct {
     int sub;
     char topic[MESSAGE_SIZE];
 } sub_entry;
 
 
-static QueueHandle_t in_q;
-static QueueHandle_t out_q;
-static QueueHandle_t sub_q;
+QueueHandle_t in_q;
+QueueHandle_t out_q;
+QueueHandle_t sub_q;
+
 MQTTClient client;
 Network network;
 
@@ -32,15 +35,11 @@ mqtt_message buf_in;
 
 void SMQTTReceive(MessageData *msg) {
     uint8_t i;
-    for (i = 0; i < msg->topicName->lenstring.len && i < MESSAGE_SIZE; ++i) {
-        buf_in.topic[i] = msg->topicName->lenstring.data[i];
-    }
-    buf_in.topic[i] = 0;
+    strncpy(buf_in.topic, msg->topicName->lenstring.data, MESSAGE_SIZE);
+    strncpy(buf_in.message, msg->message->payload, MESSAGE_SIZE);
     
-    for (i = 0; i < msg->message->payloadlen && i < MESSAGE_SIZE; ++i) {
-        buf_in.message[i] = ((char *)msg->message->payload)[i];
-    }
-    buf_in.message[i] = 0;
+    buf_in.topic[MESSAGE_SIZE - 1] = 0;
+    buf_in.message[MESSAGE_SIZE - 1] = 0; 
     
     xQueueSendToBack(in_q, &buf_in, 0);
 }
@@ -64,32 +63,28 @@ void SMQTTTask() {
     NetworkInit(&network, NETWORK_SSID, NETWORK_PASSWORD);
 	MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
     
-	if ((rc = NetworkConnect(&network, address, 1883)) != 0)
+	if ((rc = NetworkConnect(&network, address, 1883)) != 0) {
 		printf("Return code from network connect is %d\n", rc);
+    }
     #if defined(MQTT_TASK)
-    	if ((rc = MQTTStartTask(&client)) != pdPASS)
+    	if ((rc = MQTTStartTask(&client)) != pdPASS) {
     		printf("Return code from start tasks is %d\n", rc);
+        }
     #else
         #error "MQTT_TASK not defined"
     #endif
     
-	if ((rc = MQTTConnect(&client, &connectData)) != 0)
+	if ((rc = MQTTConnect(&client, &connectData)) != 0) {
 		printf("Return code from MQTT connect is %d\n", rc);
+    }
     
     sub_entry s;
-        MQTTMessage buf_m;
-        buf_m.qos = QOS0;
-        buf_m.retained = 0;
+    MQTTMessage buf_m;
+    buf_m.qos = QOS0;
+    buf_m.retained = 0;
     
     while (1) {
-        if (xQueueReceive(out_q, (void *)&buf_out, 0) == pdTRUE) {
-            buf_m.payload = buf_out.message;
-            buf_m.payloadlen = strlen(buf_out.message);
-            
-            MQTTPublish(&client, buf_out.topic, &buf_m);
-        }
-        
-        if (xQueueReceive(sub_q, (void *)&s, 0) == pdTRUE) {
+        while (xQueueReceive(sub_q, (void *)&s, 0) == pdTRUE) {
             if (s.sub) {
                 MQTTSubscribe(&client, s.topic, 2, SMQTTReceive);
                 printf("SMQTT subscribed to \"%s\"\n", s.topic);
@@ -98,6 +93,14 @@ void SMQTTTask() {
                 printf("SMQTT unsubscribed from \"%s\"\n", s.topic);
             }
         }
+        
+        while (xQueueReceive(out_q, (void *)&buf_out, 0) == pdTRUE) {
+            buf_m.payload = buf_out.message;
+            buf_m.payloadlen = strlen(buf_out.message);
+            
+            MQTTPublish(&client, buf_out.topic, &buf_m);
+        }
+        vTaskDelay(1000);
     }
 }
 
