@@ -105,7 +105,7 @@ int vl53l0x_init() {
     }
 
     if(Status == VL53L0X_ERROR_NONE) {
-        Status = VL53L0X_SetDeviceMode(&MyDevice, VL53L0X_DEVICEMODE_SINGLE_RANGING);
+        Status = VL53L0X_SetDeviceMode(&MyDevice, VL53L0X_DEVICEMODE_CONTINUOUS_RANGING);
     } else {
         print_vl53l0x_error(Status);
     }

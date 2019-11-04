@@ -73,7 +73,7 @@ void move_to_next(uint8_t speed) {
         }
         PWM_WriteCompare1(speed);
         PWM_WriteCompare2(speed);
-        vTaskDelay(50);
+        vTaskDelay(125);
         motor_reset();
     } else {
         vTaskDelay(500);
@@ -106,16 +106,18 @@ int motor_enabled() {
 
 void motor_rotate(int side, uint8_t speed) {
     if (MOVEMENT_ENABLED) {
-        motor_tank_turn(side, speed);
-        vTaskDelay(100);
+        if (!line_centered()) {
+            motor_tank_turn(side, speed);
+            vTaskDelay(100);
+        }
         
-        for (int i = 0; i < 2; ++i) {
-            while (!line_centered()) {
-                motor_tank_turn(side, speed);
-            }
-            while (line_centered()) {
-                motor_tank_turn(side, speed);
-            }
+        while (line_centered()) {
+            motor_tank_turn(side, speed);
+        }
+        vTaskDelay(10);
+            
+        while (!line_centered()) {
+            motor_tank_turn(side, speed);
         }
         motor_reset();
     } else {
@@ -141,6 +143,11 @@ void rotate_to(int dir, uint8_t speed) {
         } else if (side > 1) {
             side = 1;
         }
+        
+        if ((robot_position.x == 6 && robot_position.dir == 0 && dir == 2) ||  // Right edge
+                (robot_position.x == 0 && robot_position.dir == 2 && dir == 0)) {  // Left edge
+            side = 0;  // Exceptional case when the robot needs to turn inside on the edges of the track
+        }
         for (int i = 0; i < n; ++i) {
             motor_rotate(side, speed);
         }
@@ -163,6 +170,7 @@ void complete_track(uint8_t speed) {
         send_coords();
     }
     rotate_to(0, speed);
+    move_to_next(speed);
     move_to_next(speed);
     move_to_next(speed);
     send_coords();

@@ -33,9 +33,14 @@ mqtt_message buf_out;
 mqtt_message buf_in;
 
 
+int min(int a, int b) {
+    return a < b ? a : b;
+}
+
+
 void SMQTTReceive(MessageData *msg) {
-    strncpy(buf_in.topic, msg->topicName->lenstring.data, MESSAGE_SIZE);
-    strncpy(buf_in.message, msg->message->payload, MESSAGE_SIZE);
+    strncpy(buf_in.topic, msg->topicName->lenstring.data, min(msg->topicName->lenstring.len, MESSAGE_SIZE));
+    strncpy(buf_in.message, msg->message->payload, min(msg->message->payloadlen, MESSAGE_SIZE));
     
     buf_in.topic[MESSAGE_SIZE - 1] = 0;
     buf_in.message[MESSAGE_SIZE - 1] = 0; 

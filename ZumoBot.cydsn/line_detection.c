@@ -23,7 +23,7 @@ void ref_read_normalized(sensors *ref) {
 
 
 int intersection_detected() {
-    struct sensors_ ref;
+    sensors ref;
     const uint16_t threshold = 20000;
     
     reflectance_read(&ref);
@@ -35,7 +35,11 @@ int intersection_detected() {
 
 
 int line_centered() {
-    return abs(get_line_pos()) < 10;
+    sensors ref;
+    const uint16_t threshold = 20000;
+    reflectance_read(&ref);
+    
+    return abs(get_line_pos()) < 5 && ref.r1 > threshold && ref.l1 > threshold;
 }
 
 

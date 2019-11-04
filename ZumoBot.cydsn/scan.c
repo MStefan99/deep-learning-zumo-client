@@ -13,8 +13,8 @@
 #include "scan.h"
 
 
-const int tile_size = 200; //mm
-const int pos_fix = 50; //mm
+const int tile_size = 150; //mm
+const int pos_fix = 100; //mm
 
 
 void send_obstacle(tile t) {
@@ -61,7 +61,8 @@ int scan(tile *t) {
     double std_dev = 0;
     
     measure_distance(&dist, &std_dev, 10);
-    int dist_tiles = (dist - (double)pos_fix) / tile_size;
+    int dist_tiles = (dist + (double)pos_fix) / tile_size;
+    
     
     if (dist < 0) {
         dist_tiles = -1;
