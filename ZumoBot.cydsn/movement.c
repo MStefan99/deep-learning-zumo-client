@@ -167,13 +167,11 @@ void complete_track(uint8_t speed) {
             rotate_to(1, speed);
             move_to_next(speed);
         }
-        send_coords();
     }
     rotate_to(0, speed);
     move_to_next(speed);
     move_to_next(speed);
     move_to_next(speed);
-    send_coords();
 }
 
 

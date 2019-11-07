@@ -39,13 +39,15 @@ int min(int a, int b) {
 
 
 void SMQTTReceive(MessageData *msg) {
-    strncpy(buf_in.topic, msg->topicName->lenstring.data, min(msg->topicName->lenstring.len, MESSAGE_SIZE));
-    strncpy(buf_in.message, msg->message->payload, min(msg->message->payloadlen, MESSAGE_SIZE));
+    strncpy(buf_in.topic, msg->topicName->lenstring.data, min(msg->topicName->lenstring.len, MESSAGE_SIZE - 1));
+    strncpy(buf_in.message, msg->message->payload, min(msg->message->payloadlen, MESSAGE_SIZE - 1));
     
-    buf_in.topic[MESSAGE_SIZE - 1] = 0;
-    buf_in.message[MESSAGE_SIZE - 1] = 0; 
+    buf_in.topic[min(msg->topicName->lenstring.len, MESSAGE_SIZE - 1)] = 0;
+    buf_in.message[min(msg->message->payloadlen, MESSAGE_SIZE - 1)] = 0; 
     
     xQueueSendToBack(in_q, &buf_in, 0);
+    
+    mqtt_print("Rec/Zumo", "Rec on \"%s\"", buf_in.topic);
 }
 
 

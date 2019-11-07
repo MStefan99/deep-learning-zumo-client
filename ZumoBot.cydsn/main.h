@@ -39,11 +39,11 @@
     tile t;
     mqtt_message msg = {"", ""};
     int action = 0;
+    const char mqtt_version[] = "v0.1";
     
     
     CY_ISR_PROTO(button_isr);
     CY_ISR_PROTO(led_isr);
-    void print_element(const void *element);
     
     #endif
 

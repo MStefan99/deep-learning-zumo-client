@@ -42,7 +42,7 @@ void change_state(state_id_t state) {
     }
     set_motor_state(states[find_state(current_state)].movement_enabled);
     
-    mqtt_print("Info/Zumo/State", "%s", states[find_state(current_state)].name);
+    mqtt_print("Info/Zumo/State", "\"%s\"", states[find_state(current_state)].name);
     led_state = 0;
 }
 

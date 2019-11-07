@@ -14,7 +14,7 @@ int zmain(void) {
     LED_Timer_Start();
     
     mqtt_sub("Net/#");
-    mqtt_print("Zumo/Status", "Boot");
+    mqtt_print("Zumo/Status", "Ready");
     change_state(BOOT_IDLE_STATE);
     
     while (1) {
@@ -32,40 +32,50 @@ int zmain(void) {
             break;
             
             case WAIT_STATE:
-                if (mqtt_receive(&msg) && strstr(msg.topic, "Net/Status") && strstr(msg.message, "Ready")) {
-                    change_state(PRESCAN_STATE);
-                    mqtt_print("Ack/Zumo" , "Ready");
-                    mqtt_print("Zumo/Status", "Ready");
+                if (mqtt_receive(&msg)) {
+                    if (!strcmp(msg.topic, "Net/Status") && !strcmp(msg.message, "Ready")) {
+                        mqtt_print("Ack/Zumo" , "Ready");
+                        mqtt_print("Zumo/Version", "%s", mqtt_version);
+                    }
+                    
+                    if (!strcmp(msg.topic, "Net/Version")) {
+                        if (!strcmp(msg.message, mqtt_version)) {
+                            mqtt_print("Info/Zumo/Connect" , "Server found");
+                            change_state(PRESCAN_STATE);
+                        } else {
+                            mqtt_print("Info/Zumo/WARNING" , "Incompatible");
+                            change_state(ERR_STATE);
+                        }
+                    }
                 }
                 vTaskDelay(1000);
             break;   
                 
             case PRESCAN_STATE:
                 vTaskDelay(5000);
-                mqtt_print("Info/Zumo", "Pre-scan started");
+                mqtt_print("Info/Zumo/Scan", "Pre-scan started");
                 
                 move_to_next(speed);
                 move_to_next(speed);
                 pre_scan(speed);
                 
-                mqtt_print("Zumo/Status", "Ready");
                 change_state(NAV_STATE);
                 vTaskDelay(1000);
+                mqtt_print("Zumo/Move", "-2");
             break;
             
             case NAV_STATE:
                 if (mqtt_receive(&msg)) { 
-                    mqtt_print("Rec/Zumo", "Rec on \"%s\"", msg.topic);
-                    if (strstr(msg.topic, "Net/Status")) {
-                        if (strstr(msg.message, "Finish")) {
+                    if (!strcmp(msg.topic, "Net/Status")) {
+                        if (!strcmp(msg.message, "Finish")) {
                             mqtt_print("Ack/Zumo", "Finish");
                             change_state(CMP_NAV_STATE);
-                        } else if (strstr(msg.message, "Stuck")) {
+                        } else if (!strcmp(msg.message, "Stuck")) {
                             mqtt_print("Ack/Zumo", "Stuck");
                             change_state(FIN_IDLE_STATE);
                         }
                       
-                    } else if (strstr(msg.topic, "Net/Action")) {
+                    } else if (!strcmp(msg.topic, "Net/Action")) {
                         sscanf(msg.message, "%i", &action);
                         mqtt_print("Ack/Zumo", "Action");
                         
@@ -107,11 +117,6 @@ int zmain(void) {
             break;
         }
     }
-}
-
-
-void print_element(const void *element) {
-    
 }
 
 
