@@ -53,7 +53,7 @@ ref_offset ref_get_offset(sensors ref_readings) {
 }
 
 
-void calibrate() {
+void calibrate_ref() {
     sensors values;
     reflectance_read(&values);
     offset = ref_get_offset(values);

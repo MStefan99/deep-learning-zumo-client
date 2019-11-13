@@ -25,7 +25,7 @@
         extern ref_offset offset;
         
         
-        void calibrate();
+        void calibrate_ref();
         void ref_read_normalized(sensors *ref);
         
         int get_line_pos();

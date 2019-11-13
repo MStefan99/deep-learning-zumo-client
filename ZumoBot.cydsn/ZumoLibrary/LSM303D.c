@@ -25,8 +25,10 @@ uint8_t LSM303D_Start(void){
     I2C_Write(LSM303D, CTRL_1, 0x77);           // set accelerometer & magnetometer into active mode
     I2C_Write(LSM303D, CTRL_7, 0x83);
     
-    if(I2C_Read(LSM303D, WHO_AM_I) == DEV_ID){
-
+    uint8_t id;
+    I2C_Read(LSM303D, WHO_AM_I, &id);
+    
+    if(id == DEV_ID) {
         return 1;
 
     }
