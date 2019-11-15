@@ -124,7 +124,7 @@
 )
 
 #define get_angle(out_acc_h, out_acc_l, freq, scale) ( \
-    (out_acc_h << 8 | out_acc_l) * dt(freq) * sensitivity(scale) \
+    (int16_t)(out_acc_h << 8 | out_acc_l) * dt(freq) * sensitivity(scale) \
 )
     
 // End of setup macros
@@ -180,7 +180,7 @@ int L3GD20H_read(gyro_data *data) {
 int L3GD20H_calibrate() {
     uint8_t ctrl = 0;
     xQueueReceive(gyro_ctrl, &ctrl, 0);
-    ctrl |= 0x03;  // Setting calibration and reset bits
+    ctrl |= 0x02;  // Setting calibration and reset bits
     return xQueueSendToBack(gyro_ctrl, &ctrl, 0);
 }
 
@@ -203,18 +203,17 @@ void L3GD20H_Task() {
     
     gyro_data offset = {0, 0, 0};
     gyro_data gyro = {0, 0, 0};
+    double angle_batch = 0;
     double angle = 0;
     
     uint32_t delay = 10;
     
     while (1) {
-        printf("  Gyro task delay %i\n", delay);
         vTaskDelay(delay);
         xQueueReceive(gyro_ctrl, &task_ctrl, 0);
+        angle_batch = 0;
         
         I2C_Read(L3GD20H, FIFO_SRC, &fifo_status);
-        
-        printf("Fifo filling: %i\n", fifo_unread_num(fifo_status));
         if (!fifo_threshold(fifo_status)) {
             ++delay;  // FIFO not filled completely, we can decrease polling rate to reduce load
             
@@ -230,26 +229,24 @@ void L3GD20H_Task() {
             I2C_Read_Multiple(L3GD20H, OUT_Z_L | 0x80, tmp, 2);
             angle = get_angle(tmp[0], tmp[1], frequency, range);
             
+            angle_batch += angle;
             gyro.z += (double) angle - offset.z;
         }
         
         if (task_ctrl & 0x02) {  // Checking calibration bit
-            angle = get_angle(tmp[0], tmp[1], frequency, range);
-            offset.z = angle;
+            offset.z = angle_batch / fifo_unread_num(fifo_status);
             
             task_ctrl &= 0xFD;  // Clearing calibration bit
         }
         
         if (task_ctrl & 0x01) {  // Checking reset bit
-            gyro.x = 0;  // Resetting the position
-            gyro.y = 0;
-            gyro.z = 0;
+            gyro.z = 0;  // Resetting the position
             
             task_ctrl &= 0xFE;  // Clearing reset bit
         }
         
         xQueueReset(gyro_out);
-        xQueueSendToBack(gyro_out, &angle, 0);
+        xQueueSendToBack(gyro_out, &gyro, 0);
         
         if (fifo_overrun(status_reg) && delay > 1) {
             delay -=5;  // Overwriting data, output ok, polling rate should be increased
