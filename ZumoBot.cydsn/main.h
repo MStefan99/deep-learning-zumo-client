@@ -45,6 +45,6 @@
     CY_ISR_PROTO(button_isr);
     CY_ISR_PROTO(led_isr);
     
-    #endif
+#endif
 
 /* [] END OF FILE */

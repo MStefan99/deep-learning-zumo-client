@@ -13,29 +13,29 @@
 #ifndef LINE_DETECTION
     #define LINE_DETECTION
     
-        #include <Reflectance.h>
-        #include <stdlib.h>
-        
-        typedef struct {
-            int16_t inner;
-            int16_t mid;
-            int16_t outer;    
-        } ref_offset;
-        
-        extern ref_offset offset;
-        
-        
-        void calibrate_ref();
-        void ref_read_normalized(sensors *ref);
-        
-        int get_line_pos();
-        int intersection_detected();
-        int line_centered();
-        
-        // Used automatically
-        ref_offset ref_get_offset(); 
-        void reflectance_normalize(sensors *ref); 
-        
-    #endif
+    #include <Reflectance.h>
+    #include <stdlib.h>
+    
+    typedef struct {
+        int16_t inner;
+        int16_t mid;
+        int16_t outer;
+    } ref_offset;
+    
+    extern ref_offset offset;
+    
+    
+    void calibrate_ref();
+    void ref_read_normalized(sensors *ref);
+    
+    int get_line_pos();
+    int intersection_detected();
+    int line_centered();
+    
+    // Used automatically
+    ref_offset ref_get_offset();
+    void reflectance_normalize(sensors *ref);
+    
+#endif
 
 /* [] END OF FILE */

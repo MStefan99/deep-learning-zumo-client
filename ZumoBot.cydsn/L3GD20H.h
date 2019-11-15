@@ -35,6 +35,6 @@
     void GyroQueueInit();
     void L3GD20H_Task();
     
-    #endif
+#endif
 
 /* [] END OF FILE */

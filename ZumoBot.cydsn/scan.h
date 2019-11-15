@@ -12,7 +12,7 @@
 
 
 #ifndef SCAN_H_
-#define SCAN_H_
+    #define SCAN_H_
     
     #include "movement.h"
     #include "FreeRTOS.h"
@@ -22,7 +22,7 @@
     #include "smqtt.h"
     #include "Beep.h"
     
-    #define SOUND_ENABLED 1
+    #define SOUND_ENABLED 0
     
     typedef struct {
         int x;
