@@ -44,6 +44,6 @@
     void SMQTTQueueInit();
     void SMQTTTask();
     
-    #endif
+#endif
 
 /* [] END OF FILE */

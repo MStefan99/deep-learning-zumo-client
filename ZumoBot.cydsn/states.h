@@ -47,6 +47,6 @@
     void change_state(state_id_t state);
     int find_state(state_id_t state);
     
-    #endif
+#endif
 
 /* [] END OF FILE */

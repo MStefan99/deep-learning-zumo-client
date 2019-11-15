@@ -12,6 +12,10 @@
 
 #include "movement.h"
 
+
+#define ANGLE 82.0
+
+
 const float p_coefficient = 1.5;
 position robot_position = {3, 12, 0};
 
@@ -106,19 +110,16 @@ int motor_enabled() {
 
 void motor_rotate(int side, uint8_t speed) {
     if (MOVEMENT_ENABLED) {
-        if (!line_centered()) {
+        gyro_data g = {0, 0, 0};
+        motor_reset();
+        vTaskDelay(100);
+        L3GD20H_calibrate();
+        L3GD20H_reset();
+        do {
+            L3GD20H_read(&g);
             motor_tank_turn(side, speed);
-            vTaskDelay(100);
-        }
-        
-        while (line_centered()) {
-            motor_tank_turn(side, speed);
-        }
-        vTaskDelay(10);
-            
-        while (!line_centered()) {
-            motor_tank_turn(side, speed);
-        }
+            printf("%f\n", g.z);
+        } while (fabs(g.z) < ANGLE);
         motor_reset();
     } else {
         vTaskDelay(500);

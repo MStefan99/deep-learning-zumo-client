@@ -13,14 +13,19 @@
 * @param    uint8 regAdd : register address to be written to
 * @param    uint8 data : value to be written
 */
-uint8_t I2C_Write(uint8_t device, uint8_t regAdd, uint8_t data){
-
-    uint8 write_buf[2] = {regAdd, data};
- 
-    I2C_MasterClearStatus(); // clear any pending status flags
-    I2C_MasterWriteBuf(device, write_buf, 2, I2C_MODE_COMPLETE_XFER); // one complete byte transfer  
-    while(((I2C_MasterStatus()) & I2C_MSTAT_WR_CMPLT) == 0); //Check status and make sure it has completed
-    return 0;
+int I2C_Write(uint8_t device_addr, uint8_t reg_addr, uint8_t data) {
+    int status = 0;
+    
+    I2C_MasterSendStart(device_addr, 0);
+    if (!status) {
+        status = I2C_MasterWriteByte(reg_addr);
+    }
+    if (!status) {
+        status = I2C_MasterWriteByte(data);
+    }
+    I2C_MasterSendStop();
+    
+    return status;
 }
 
 /**
@@ -30,13 +35,10 @@ uint8_t I2C_Write(uint8_t device, uint8_t regAdd, uint8_t data){
 * @param    uint8 regAdd : register address to be read from
 */
 
-uint8_t I2C_Read(uint8_t device, uint8_t regAdd){
+int I2C_Read(uint8_t device_addr, uint8_t reg_addr, uint8_t* data) {
     
-    uint8_t data; // Variable for data to be read
-    
-    I2C_Read_Multiple(device, regAdd, &data, 1);
-    
-    return data;
+    int status = I2C_Read_Multiple(device_addr, reg_addr, data, 1);
+    return status;
 }
 
 /**
@@ -48,14 +50,24 @@ uint8_t I2C_Read(uint8_t device, uint8_t regAdd){
 * @param    uint8 num_bytes_to_be_read : number of bytes to be read 
 */
 
-void I2C_Read_Multiple(uint8_t device, uint8_t startAdd, uint8_t* data, uint8_t count){
+int I2C_Read_Multiple(uint8_t device_addr, uint8_t reg_addr, uint8_t* data, uint8_t count) {
+    int status = 0;
     
-    I2C_MasterClearStatus(); // clear any pending status flags
-    I2C_MasterWriteBuf(device, &startAdd, 1, I2C_MODE_COMPLETE_XFER); // one complete byte transfer to establish address to be read
-    while((I2C_MasterStatus() & I2C_MSTAT_WR_CMPLT) == 0); //Check status and make sure it has completed
-    I2C_MasterClearStatus(); // clear any pending status flags
-    I2C_MasterReadBuf(device, data, count, I2C_MODE_COMPLETE_XFER);//  complete byte/multi-byte read
-    while((I2C_MasterStatus() & I2C_MSTAT_RD_CMPLT) == 0); //Check status and make sure it has completed
+    status = I2C_MasterSendStart(device_addr, 0);
+    if (!status) {
+        status = I2C_MasterWriteByte(reg_addr);
+    }
+    if (!status) {
+        status = I2C_MasterSendRestart(device_addr, 1);
+    }
+    if (!status) {
+        for (int i = 0; i < count; i++) {
+            data[i] = I2C_MasterReadByte(i == count - 1 ? I2C_2_NAK_DATA:I2C_2_ACK_DATA);
+        }
+    }
+    I2C_MasterSendStop();
+    
+    return status;
 }
 
 

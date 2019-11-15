@@ -48,6 +48,7 @@ void voltage_task() {
             mqtt_print("Info/Zumo/WARNING", "Low voltage: %3.2fV!", battery_voltage());
             low_voltage_detected = true;
             change_state(ERR_STATE);
+            vTaskDelay(10000);
         } else if (!voltage_test() && low_voltage_detected) {
             mqtt_print("Info/Zumo/Status", "Voltage normal");
             low_voltage_detected = false;

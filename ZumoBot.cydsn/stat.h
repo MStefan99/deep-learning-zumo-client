@@ -20,6 +20,6 @@
     double variance(double *realizations, double exp_value, int n);
     double standard_deviation(double variance);
     
-    #endif
+#endif
 
 /* [] END OF FILE */
