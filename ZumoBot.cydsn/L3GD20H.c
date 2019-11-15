@@ -57,13 +57,17 @@
 
 // Macros for easy setup
 
+
+// Returns time between samples
 #define dt(freq) (1.0 / freq)
 
+// Returns sensor sensitivity for chosen range
 #define sensitivity(scale) ( \
     (scale == 245? 0.00875 : \
     scale == 500? 0.0175 : 0.07) \
 )
 
+// Do not use!
 #define mode(freq) (\
     (freq == 100)? (0x3 << 4): \
     (freq == 200)? (0x6 << 4): \
@@ -72,6 +76,11 @@
     (0x3 << 4) \
 ) // Defaulting to 100 Hz
 
+/* Helps to set up CTRL1 register.
+*   freq - sensor sampling frequency. (100, 200, 400 or 800Hz)
+*   power_on - enables active mode (0 - sleep mode, 1 - active mode)
+*   last 3 parameters are used to individually activate 3 sensor axes: x, y and z (0 - off, 1 - on)
+*/
 #define ctrl1(freq, power_on, x_enable, y_enable, z_enable) (\
     (mode(freq)) | \
     (power_on? (0x1 << 3) : (0x0)) | \
@@ -80,6 +89,12 @@
     (z_enable? (0x1 << 2) : (0x0)) \
 )
 
+/* Helps to set up CTRL4 register.
+*   block_data_update - block data update. 
+*       (0 - continuos update; 1 - output registers not updated until MSB and LSB reading)
+*   big_endian - big/little endian data selection. (0 - Little endian, 1 - Big endian)
+*   scale - scale selection. (245, 500 or 2000dps)
+*/
 #define ctrl4(block_data_update, big_endian, scale) ( \
     (block_data_update? (0x1 << 7) : 0) | \
     (big_endian? (0x1 << 6) : 0) | \
@@ -87,6 +102,13 @@
     (scale == 500)? 0x1 : 0x2) << 4) \
 )
 
+/* Helps to set up CTRL5 register.
+*   reboot_memory - Reboot memory content.
+*       (0 - normal mode; 1 - reboot memory content)
+*   FIFO_enable - enables FIFO buffer. (0 - FIFO off, 1 - FIFO on)
+*   FIFO_limit_enable - stops FIFO filling at threshold (0 - limit off, 1 - limit on)
+*   high_pass_enable - enables high pass filter (0 - filter off, 1 - filter on)
+*/
 #define ctrl5(reboot_memory, FIFO_enable, FIFO_limit_enable, high_pass_enable) ( \
     (reboot_memory? (0x1 << 7) : 0) | \
     (FIFO_enable? (0x1 << 6) : 0) | \
@@ -94,6 +116,10 @@
     (high_pass_enable? (0x1 << 4) : 0) \
 )
 
+/* Helps to set up CTRL5 register.
+*   mode - sets FIFO mode (modes 1-7)
+*   threshsold - number of FIFO registers to be filled to enable threshold status (0-32 registers)
+*/
 #define fifo_ctrl(mode, threshold) ( \
     (mode << 5) | \
     (threshold) \
@@ -130,8 +156,9 @@
 // End of setup macros
 
 
-#define frequency 200
+#define frequency 800
 #define range 245
+#define FIFO_READ 0x80
 
 
 QueueHandle_t gyro_out;
@@ -197,16 +224,16 @@ void L3GD20H_Task() {
     L3GD20H_init();
     
     uint8_t tmp[2] = {0};
-    uint8_t status_reg = 0;
-    uint8_t task_ctrl = 0;
-    uint8_t fifo_status = 0;
+    uint8_t status_reg = 0x0;
+    uint8_t task_ctrl = 0x0;
+    uint8_t fifo_status = 0x0;
     
     gyro_data offset = {0, 0, 0};
     gyro_data gyro = {0, 0, 0};
     double angle_batch = 0;
     double angle = 0;
     
-    uint32_t delay = 10;
+    uint32_t delay = 100;
     
     while (1) {
         vTaskDelay(delay);
@@ -226,7 +253,7 @@ void L3GD20H_Task() {
         }
         
         for (int i = 0; i < fifo_unread_num(fifo_status); ++i) {
-            I2C_Read_Multiple(L3GD20H, OUT_Z_L | 0x80, tmp, 2);
+            I2C_Read_Multiple(L3GD20H, OUT_Z_L | FIFO_READ, tmp, 2);
             angle = get_angle(tmp[0], tmp[1], frequency, range);
             
             angle_batch += angle;

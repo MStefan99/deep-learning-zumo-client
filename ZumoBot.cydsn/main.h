@@ -18,7 +18,6 @@
     #include "task.h"
     #include "Nunchuk.h"
     #include "vl53l0x.h"
-    #include "L3GD20H.h"
     #include "Reflectance.h"
     #include "Beep.h"
     #include <time.h>

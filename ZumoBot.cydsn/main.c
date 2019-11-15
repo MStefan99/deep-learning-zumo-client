@@ -19,13 +19,13 @@ int zmain(void) {
     
     while (1) {
         switch (current_state) {
-            case BOOT_IDLE_STATE: 
+            case BOOT_IDLE_STATE:
                 vTaskDelay(1000);
             break;
                 
             case CLB_IDLE_STATE:
                 if (!calibrated) { 
-                    calibrate();
+                    calibrate_ref();
                     calibrated = true;
                 }
                 vTaskDelay(1000);

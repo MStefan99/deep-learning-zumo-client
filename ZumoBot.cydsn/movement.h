@@ -17,6 +17,7 @@
         #include <task.h>
         #include "line_detection.h"
         #include "smqtt.h"
+        #include "math.h"
     
         #define MOVEMENT_ENABLED 1  // Used for debugging, does not block or affect program flow
         
