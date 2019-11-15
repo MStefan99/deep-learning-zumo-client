@@ -21,9 +21,9 @@
     #include "I2C_Common.h"
 
     typedef struct {
-        double gyro_x;
-        double gyro_y;
-        double gyro_z;
+        double x;
+        double y;
+        double z;
     } gyro_data;
     
     

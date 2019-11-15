@@ -12,11 +12,15 @@
 
 #include "L3GD20H.h"
 
+
 // Device i2c address
+
 #define L3GD20H 0x6B
 #define WHO_AM_I_REF 0xD7
 
+
 // Register addresses
+
 #define WHO_AM_I 0x0F
 
 #define CTRL1 0x20
@@ -50,7 +54,84 @@
 
 #define LOW_ODR 0x39
 
-#define READ_MULTI 0x80
+
+// Macros for easy setup
+
+#define dt(freq) (1.0 / freq)
+
+#define sensitivity(scale) ( \
+    (scale == 245? 0.00875 : \
+    scale == 500? 0.0175 : 0.07) \
+)
+
+#define mode(freq) (\
+    (freq == 100)? (0x3 << 4): \
+    (freq == 200)? (0x6 << 4): \
+    (freq == 400)? (0xB << 4): \
+    (freq == 800)? (0xE << 4): \
+    (0x3 << 4) \
+) // Defaulting to 100 Hz
+
+#define ctrl1(freq, power_on, x_enable, y_enable, z_enable) (\
+    (mode(freq)) | \
+    (power_on? (0x1 << 3) : (0x0)) | \
+    (x_enable? (0x1 << 1) : (0x0)) | \
+    (y_enable? (0x1) : (0x0)) | \
+    (z_enable? (0x1 << 2) : (0x0)) \
+)
+
+#define ctrl4(block_data_update, big_endian, scale) ( \
+    (block_data_update? (0x1 << 7) : 0) | \
+    (big_endian? (0x1 << 6) : 0) | \
+    (((scale == 245)? 0x0 : \
+    (scale == 500)? 0x1 : 0x2) << 4) \
+)
+
+#define ctrl5(reboot_memory, FIFO_enable, FIFO_limit_enable, high_pass_enable) ( \
+    (reboot_memory? (0x1 << 7) : 0) | \
+    (FIFO_enable? (0x1 << 6) : 0) | \
+    (FIFO_limit_enable? (0x1 << 5) : 0) | \
+    (high_pass_enable? (0x1 << 4) : 0) \
+)
+
+#define fifo_ctrl(mode, threshold) ( \
+    (mode << 5) | \
+    (threshold) \
+)
+
+#define data_overrun(status_reg) ( \
+    (status_reg & 0x80) \
+)
+
+#define data_available(status_reg) ( \
+    (status_reg & 0x8) \
+)
+
+#define fifo_threshold(fifo_src_reg) ( \
+    (fifo_src_reg & 0x80)? 1 : 0 \
+)
+
+#define fifo_overrun(fifo_src_reg) ( \
+    (fifo_src_reg & 0x40)? 1 : 0 \
+)
+
+#define fifo_empty(fifo_src_reg) ( \
+    (fifo_src_reg & 0x20)? 1 : 0 \
+)
+
+#define fifo_unread_num(fifo_src_reg) ( \
+    (fifo_src_reg & 0x1F) \
+)
+
+#define get_angle(out_acc_h, out_acc_l, freq, scale) ( \
+    (out_acc_h << 8 | out_acc_l) * dt(freq) * sensitivity(scale) \
+)
+    
+// End of setup macros
+
+
+#define frequency 200
+#define range 245
 
 
 QueueHandle_t gyro_out;
@@ -73,24 +154,20 @@ int L3GD20H_init() {
     if (wai != WHO_AM_I_REF) {
         return -1;
     }
-    
     // Beginning startup sequence
     
-    status = I2C_Write(L3GD20H, CTRL2, 0x00);  // Setting high pass filter settings
-    status = I2C_Write(L3GD20H, CTRL3, 0x00);  // Setting interrupts off
-    status = I2C_Write(L3GD20H, CTRL4, 0x40);  // Setting big-endian mode
-    status = I2C_Write(L3GD20H, REFERENCE, 0x00);  // Setting high pass filter reference
+    status = I2C_Write(L3GD20H, CTRL4, ctrl4(0, 1, range));  // Setting big-endian mode, range +-245
+    status = I2C_Write(L3GD20H, REFERENCE, 0);  // Setting high pass filter reference
     
-    // Interrupts should be set up by writing to IG_THS, IG_DURATION and IG_CFG but the pin is not connected
+    // Interrupts should be set up here by writing to IG_THS, IG_DURATION and IG_CFG but interrupt pin isn't connected
     
-    status = I2C_Write(L3GD20H, FIFO_CTRL, 0x40);  // Setting Stream mode, threshold 0
-    status = I2C_Write(L3GD20H, FIFO_SRC, 0xE0);  // Setting FIFO filling if > threshold, 
-                                                  // overrun bit = 1 if completely filed, empty bit = 1 if empty
-    status = I2C_Write(L3GD20H, CTRL5, 0x40);  // FIFO enabled, high pass filter off
-    status = I2C_Write(L3GD20H, CTRL1, 0x6F);  // Setting 200Hz data rate, active mode, all axes enabled
+    status = I2C_Write(L3GD20H, FIFO_CTRL, fifo_ctrl(2, 30));  // Setting Stream mode, threshold 30
+    status = I2C_Write(L3GD20H, CTRL5, ctrl5(0, 1, 0, 0));  // FIFO enabled, depth not limited, 
+                                                            //high pass filter disabled
+    status = I2C_Write(L3GD20H, CTRL1, ctrl1(frequency, 1, 0, 0, 1));  // Setting 200Hz data rate, 
+                                                                       // active mode, only x axis enabled
     
     // Startup sequence is now complete
-    
     return status;
 }
 
@@ -119,62 +196,63 @@ int L3GD20H_reset() {
 void L3GD20H_Task() {
     L3GD20H_init();
     
-    uint8_t tmp[6] = {0};
-    uint8_t status_reg;
-    uint8_t ctrl = 0;
-    gyro_data offset = {0, 0, 0};
-    double step_size = 0.00875; // for ±245 dps range sensitivity is 8.75 mdps per digit
+    uint8_t tmp[2] = {0};
+    uint8_t status_reg = 0;
+    uint8_t task_ctrl = 0;
+    uint8_t fifo_status = 0;
     
-    gyro_data angle = {0, 0, 0};
-    int16_t raw[3] = {0};
+    gyro_data offset = {0, 0, 0};
+    gyro_data gyro = {0, 0, 0};
+    double angle = 0;
     
     uint32_t delay = 10;
     
     while (1) {
-        //printf("Gyro task delay %i\n", delay);
+        printf("  Gyro task delay %i\n", delay);
         vTaskDelay(delay);
-        xQueueReceive(gyro_ctrl, &ctrl, 0);
+        xQueueReceive(gyro_ctrl, &task_ctrl, 0);
         
-        I2C_Read_Multiple(L3GD20H, STATUS, &status_reg, 1);
-        if (!(status_reg & 0x08)) {
-            ++delay;  // Data not ready, output undefined, polling rate should be decreased
-            continue;  // Skipping data reading
-        }
+        I2C_Read(L3GD20H, FIFO_SRC, &fifo_status);
         
-        for (int i = 0; i < 32; ++i) {
-            I2C_Read_Multiple(L3GD20H, OUT_X_L | READ_MULTI, tmp, 6);
-            raw[0] = (tmp[0] << 8 | tmp[1]);
-            raw[1] = (tmp[2] << 8 | tmp[3]);
-            raw[2] = (tmp[4] << 8 | tmp[5]);
+        printf("Fifo filling: %i\n", fifo_unread_num(fifo_status));
+        if (!fifo_threshold(fifo_status)) {
+            ++delay;  // FIFO not filled completely, we can decrease polling rate to reduce load
             
-            angle.gyro_x += (double) raw[0] * step_size - offset.gyro_x;
-            angle.gyro_y += (double) raw[1] * step_size - offset.gyro_y;
-            angle.gyro_z += (double) raw[2] * step_size - offset.gyro_z;
+            if (fifo_empty(fifo_status)) {
+                delay += 5;  // FIFO empty, output undefined, polling rate should be decreased
+                continue;  // Skipping data reading
+            }
+        } else {
+            --delay;  // FIFO almost filled, polling rate should be increased 
         }
         
-        if (ctrl & 0x02) {  // Checking calibration bit
-            raw[0] = (tmp[0] << 8 | tmp[1]);
-            raw[1] = (tmp[2] << 8 | tmp[3]);
-            raw[2] = (tmp[4] << 8 | tmp[5]);
+        for (int i = 0; i < fifo_unread_num(fifo_status); ++i) {
+            I2C_Read_Multiple(L3GD20H, OUT_Z_L | 0x80, tmp, 2);
+            angle = get_angle(tmp[0], tmp[1], frequency, range);
             
-            offset.gyro_x = (double) raw[0] * step_size;
-            offset.gyro_y = (double) raw[1] * step_size;
-            offset.gyro_z = (double) raw[2] * step_size;
-            ctrl &= 0xFD;  // Clearing calibration bit
+            gyro.z += (double) angle - offset.z;
         }
         
-        if (ctrl & 0x01) {  // Checking reset bit
-            angle.gyro_x = 0;  // Resetting the position
-            angle.gyro_y = 0;
-            angle.gyro_z = 0;
-            ctrl &= 0xFE;  // Clearing reset bit
+        if (task_ctrl & 0x02) {  // Checking calibration bit
+            angle = get_angle(tmp[0], tmp[1], frequency, range);
+            offset.z = angle;
+            
+            task_ctrl &= 0xFD;  // Clearing calibration bit
+        }
+        
+        if (task_ctrl & 0x01) {  // Checking reset bit
+            gyro.x = 0;  // Resetting the position
+            gyro.y = 0;
+            gyro.z = 0;
+            
+            task_ctrl &= 0xFE;  // Clearing reset bit
         }
         
         xQueueReset(gyro_out);
         xQueueSendToBack(gyro_out, &angle, 0);
         
-        if (status_reg & 0x80 && delay > 1) {
-            --delay;  // Overwriting data, output ok, polling rate should be increased
+        if (fifo_overrun(status_reg) && delay > 1) {
+            delay -=5;  // Overwriting data, output ok, polling rate should be increased
         }
     }
 }
