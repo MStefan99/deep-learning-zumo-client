@@ -77,6 +77,25 @@
 
 // Macros for easy setup
 
+// Returns time between samples
+#define LSM303D_dt(freq) (1.0 / freq)
+
+// Returns sensor sensitivity for chosen range
+#define LSM303D_acc_sensitivity(scale) ( \
+    (scale == 2)? 0.000061 : \
+    (scale == 4)? 0.000122 : \
+    (scale == 6)? 0.000183 : \
+    (scale == 8)? 0.000244 : \
+    0.000734 \
+)  // Defaulting to widest range
+    
+#define LSM303D_mag_sensitivity(scale) ( \
+    (scale == 2)? 0.00008 : \
+    (scale == 4)? 0.00016 : \
+    (scale == 8)? 0.00032 : \
+    0.000479 \
+)  // Defaulting to highest range
+
 #define LSM303D_aodr(freq) ( \
     (freq == 0)? 0 : \
     (freq == 3.125)? (0x0 << 2): \
@@ -122,7 +141,7 @@
     (scale == 6)? (0x2 << 3): \
     (scale == 8)? (0x3 << 3): \
     (0x4 << 3) \
-)  // Defaulting to biggest scale
+)  // Defaulting to widest range
     
 #define LSM303D_ctrl5(temp_enable, magnetic_resolution, magnetic_freq) ( \
     LSM303D_modr(magnetic_freq) | \
@@ -130,13 +149,13 @@
     (magnetic_resolution? (0x3 << 5) : 0) \
 )
 
-#define LSM303D_ctrl6(magnetic_scale) ( \
-    (magnetic_scale == 2)? (0x0 << 5): \
-    (magnetic_scale == 4)? (0x1 << 5): \
-    (magnetic_scale == 8)? (0x2 << 5): \
-    (magnetic_scale == 12)? (0x3 << 5): \
-    (0x0 << 5) \
-)
+#define LSM303D_ctrl6(scale) ( \
+    (scale == 2)? (0x0 << 5): \
+    (scale == 4)? (0x1 << 5): \
+    (scale == 8)? (0x2 << 5): \
+    (scale == 12)? (0x3 << 5): \
+    (0x3 << 5) \
+)  // Defaulting to widest range
     
 #define LSM303D_ctrl7(magnetic_mode) ( \
     (magnetic_mode) \
@@ -171,11 +190,34 @@
     (a_status_reg & 0x8) \
 )
 
+#define LSM303D_get_acc(out_acc_h, out_acc_l, scale) ( \
+    (int16_t)(out_acc_h << 8 | out_acc_l) * LSM303D_acc_sensitivity(scale) \
+)
+
+#define LSM303D_get_pos(out_acc_h, out_acc_l, freq, scale) ( \
+    (int16_t)(out_acc_h << 8 | out_acc_l) * LSM303D_dt(freq) * LSM303D_acc_sensitivity(scale) \
+)
+
 // End of setup macros
 
 #define LSM303D_range 4
 #define LSM303D_frequency 200
 #define LSM303D_FIFO_READ 0x80
+#define x_enabled 1
+#define y_enabled 1
+#define z_enabled 1
+
+
+QueueHandle_t accelerometer_acc_out;
+QueueHandle_t accelerometer_spd_out;
+QueueHandle_t accelerometer_ctrl;
+
+
+void LSM303D_queue_init() {
+    accelerometer_acc_out = xQueueCreate(1, sizeof(accelerometer_data));
+    accelerometer_spd_out = xQueueCreate(1, sizeof(accelerometer_data));
+    accelerometer_ctrl = xQueueCreate(1, sizeof(uint8_t));
+}
 
 
 int LSM303D_init() {
@@ -192,10 +234,8 @@ int LSM303D_init() {
     
     // FIFO enabled, FIFO limit off
     status = I2C_Write(LSM303D, LSM303D_CTRL0, LSM303D_ctrl0(0, 1, 0)); 
-    // Setting accelerometer frequency, only x axis enabled 
-    status = I2C_Write(LSM303D, LSM303D_CTRL1, LSM303D_ctrl1(LSM303D_frequency, 0, 1, 0, 0));
-    // Setting accelerometer range
-    status = I2C_Write(LSM303D, LSM303D_CTRL2, LSM303D_ctrl2(LSM303D_range));
+    // Setting accelerometer frequency, enabling axes
+    status = I2C_Write(LSM303D, LSM303D_CTRL1, LSM303D_ctrl1(LSM303D_frequency, 0, x_enabled, y_enabled, z_enabled));
     // Setting accelerometer range
     status = I2C_Write(LSM303D, LSM303D_CTRL2, LSM303D_ctrl2(LSM303D_range));
     // Enabling FIFO in stream mode, setting FIFO threshold
@@ -206,16 +246,123 @@ int LSM303D_init() {
 }
 
 
+int LSM303D_read_acc(accelerometer_data *data) {
+    return xQueueReceive(accelerometer_acc_out, data, 0);
+}
 
-void LSM303D_Read_Acc(accelerometer_data* data){
+
+int LSM303D_read_spd(accelerometer_data *data) {
+    return xQueueReceive(accelerometer_spd_out, data, 0);
+}
+
+
+int LSM303D_calibrate() {
+    uint8_t ctrl = 0;
+    xQueueReceive(accelerometer_ctrl, &ctrl, 0);
+    ctrl |= 0x02;  // Setting calibration bit
+    return xQueueSendToBack(accelerometer_ctrl, &ctrl, 0);
+}
+
+
+int LSM303D_reset() {
+    uint8_t ctrl = 0;
+    xQueueReceive(accelerometer_ctrl, &ctrl, 0);
+    ctrl |= 0x01;  // Setting reset bit
+    return xQueueSendToBack(accelerometer_ctrl, &ctrl, 0);
+}
+
+
+void LSM303D_task() {
+    LSM303D_init();
     
-    uint8_t xyz[6];
+    uint8_t tmp[2] = {0};
+    uint8_t status_reg = 0x0;
+    uint8_t task_ctrl = 0x0;
+    uint8_t fifo_status = 0x0;
     
-    I2C_Read_Multiple(LSM303D, LSM303D_OUT_X_L_A | LSM303D_FIFO_READ, xyz, 6);
+    accelerometer_data acc = {0, 0, 0};
+    accelerometer_data acc_batch = {0, 0, 0};
+    accelerometer_data acc_offset = {0, 0, 0};
+    accelerometer_data spd = {0, 0, 0};
+    accelerometer_data spd_offset = {0, 0, 0};
     
-    data->x = (int16)(xyz[1] << 8 | xyz[0]);
-    data->y = (int16)(xyz[3] << 8 | xyz[2]);
-    data->z = (int16)(xyz[5] << 8 | xyz[4]);
+    uint32_t delay = 100;
+    
+    while (1) {
+        vTaskDelay(delay);
+        xQueueReceive(accelerometer_ctrl, &task_ctrl, 0);
+        acc_batch.x = 0;
+        acc_batch.y = 0;
+        acc_batch.z = 0;
+        
+        I2C_Read(LSM303D, LSM303D_FIFO_SRC, &fifo_status);
+        if (!LSM303D_fifo_threshold(fifo_status)) {
+            ++delay;  // FIFO not filled completely, we can decrease polling rate to reduce load
+            
+            if (LSM303D_fifo_empty(fifo_status)) {
+                delay += 5;  // FIFO empty, output undefined, polling rate should be decreased
+                continue;  // Skipping data reading
+            }
+        } else {
+            --delay;  // FIFO almost filled, polling rate should be increased 
+        }
+        
+        for (int i = 0; i < LSM303D_fifo_unread_num(fifo_status); ++i) {
+            if (x_enabled) {
+                I2C_Read_Multiple(LSM303D, LSM303D_OUT_X_L_A | LSM303D_FIFO_READ, tmp, 2);
+                
+                acc_batch.x += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) - acc_offset.x;
+                spd.x += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) - spd_offset.x;
+            }
+            
+            if (y_enabled) {
+                I2C_Read_Multiple(LSM303D, LSM303D_OUT_Y_L_A | LSM303D_FIFO_READ, tmp, 2);
+                
+                acc_batch.y += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) - acc_offset.y;
+                spd.y += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) - spd_offset.y;
+            }
+            
+            if (z_enabled) {
+                I2C_Read_Multiple(LSM303D, LSM303D_OUT_Z_L_A | LSM303D_FIFO_READ, tmp, 2);
+                
+                acc_batch.z += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) - acc_offset.z;
+                spd.z += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) - spd_offset.z;
+            }
+        }
+        
+        acc.x = acc_batch.x / LSM303D_fifo_unread_num(fifo_status);
+        acc.y = acc_batch.y / LSM303D_fifo_unread_num(fifo_status);
+        acc.z = acc_batch.z / LSM303D_fifo_unread_num(fifo_status);
+        
+        if (task_ctrl & 0x02) {  // Checking calibration bit
+            acc_offset.x = acc.x;
+            acc_offset.y = acc.y;
+            acc_offset.z = acc.z;
+            
+            spd_offset.x = spd.x;
+            spd_offset.y = spd.y;
+            spd_offset.z = spd.z;
+            
+            task_ctrl &= 0xFD;  // Clearing calibration bit
+        }
+        
+        if (task_ctrl & 0x01) {  // Checking reset bit
+            spd.x = 0;  // Resetting the position
+            spd.y = 0;
+            spd.z = 0;
+            
+            task_ctrl &= 0xFE;  // Clearing reset bit
+        }
+        
+        xQueueReset(accelerometer_acc_out);
+        xQueueReset(accelerometer_spd_out);
+        xQueueSendToBack(accelerometer_acc_out, &acc, 0);
+        xQueueSendToBack(accelerometer_spd_out, &spd, 0);
+        
+        if (LSM303D_fifo_overrun(status_reg) && delay > 1) {
+            delay -=5;  // Overwriting data, output ok, polling rate should be increased
+        }
+    }
 }
 
 /* [] END OF FILE */

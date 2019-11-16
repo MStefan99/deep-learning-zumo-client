@@ -6,10 +6,12 @@
 
 #ifndef LSM303D_H_
     #define LSM303D_H_
-
+    
+    #include "project.h"
     #include <stdint.h>
     #include "FreeRTOS.h"
     #include "task.h"
+    #include "queue.h"
     #include "I2C.h"
     #include "I2C_Common.h"
       
@@ -18,9 +20,16 @@
         double y;
         double z;
     } accelerometer_data;
-
+    
+    
     int LSM303D_init();
-    void LSM303D_read(accelerometer_data* data);
-
+    int LSM303D_read_acc(accelerometer_data *data);
+    int LSM303D_read_spd(accelerometer_data *data);
+    int LSM303D_reset();
+    int LSM303D_calibrate();
+    
+    // Do not use
+    void LSM303D_queue_init();
+    void LSM303D_task();
 #endif
 /* [] END OF FILE */
