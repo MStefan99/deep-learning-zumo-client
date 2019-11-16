@@ -74,6 +74,8 @@
 #define LSM303D_TEMP_OUT_L          0x05
 #define LSM303D_TEMP_OUT_H          0x06
 
+#define G 9.81
+
 
 // Macros for easy setup
 
@@ -200,7 +202,7 @@
 
 // End of setup macros
 
-#define LSM303D_range 4
+#define LSM303D_range 2
 #define LSM303D_frequency 200
 #define LSM303D_FIFO_READ 0x80
 #define x_enabled 1
@@ -282,9 +284,8 @@ void LSM303D_task() {
     
     accelerometer_data acc = {0, 0, 0};
     accelerometer_data acc_batch = {0, 0, 0};
-    accelerometer_data acc_offset = {0, 0, 0};
+    accelerometer_data offset = {0, 0, 0};
     accelerometer_data spd = {0, 0, 0};
-    accelerometer_data spd_offset = {0, 0, 0};
     
     uint32_t delay = 100;
     
@@ -311,22 +312,25 @@ void LSM303D_task() {
             if (x_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_X_L_A | LSM303D_FIFO_READ, tmp, 2);
                 
-                acc_batch.x += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) - acc_offset.x;
-                spd.x += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) - spd_offset.x;
+                acc_batch.x += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) * G - offset.x;
+                spd.x += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) * G
+                    - offset.x * LSM303D_dt(LSM303D_frequency);
             }
             
             if (y_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_Y_L_A | LSM303D_FIFO_READ, tmp, 2);
                 
-                acc_batch.y += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) - acc_offset.y;
-                spd.y += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) - spd_offset.y;
+                acc_batch.y += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) * G - offset.y;
+                spd.y += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) * G
+                    - offset.y * LSM303D_dt(LSM303D_frequency);
             }
             
             if (z_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_Z_L_A | LSM303D_FIFO_READ, tmp, 2);
                 
-                acc_batch.z += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) - acc_offset.z;
-                spd.z += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) - spd_offset.z;
+                acc_batch.z += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) * G - offset.z;
+                spd.z += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) * G
+                    - offset.z * LSM303D_dt(LSM303D_frequency);
             }
         }
         
@@ -335,13 +339,9 @@ void LSM303D_task() {
         acc.z = acc_batch.z / LSM303D_fifo_unread_num(fifo_status);
         
         if (task_ctrl & 0x02) {  // Checking calibration bit
-            acc_offset.x = acc.x;
-            acc_offset.y = acc.y;
-            acc_offset.z = acc.z;
-            
-            spd_offset.x = spd.x;
-            spd_offset.y = spd.y;
-            spd_offset.z = spd.z;
+            offset.x = acc.x;
+            offset.y = acc.y;
+            offset.z = acc.z;
             
             task_ctrl &= 0xFD;  // Clearing calibration bit
         }
