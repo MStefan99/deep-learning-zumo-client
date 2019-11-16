@@ -77,7 +77,7 @@
 ) // Defaulting to 100 Hz
 
 /* Helps to set up CTRL1 register.
-*   freq - sensor sampling frequency. (100, 200, 400 or 800Hz)
+*   freq - sensor sampling frequency (100, 200, 400 or 800Hz)
 *   power_on - enables active mode (0 - sleep mode, 1 - active mode)
 *   last 3 parameters are used to individually activate 3 sensor axes: x, y and z (0 - off, 1 - on)
 */
@@ -90,10 +90,10 @@
 )
 
 /* Helps to set up CTRL4 register.
-*   block_data_update - block data update. 
-*       (0 - continuos update; 1 - output registers not updated until MSB and LSB reading)
-*   big_endian - big/little endian data selection. (0 - Little endian, 1 - Big endian)
-*   scale - scale selection. (245, 500 or 2000dps)
+*   block_data_update - block data update 
+*       (0 - continuos update, 1 - output registers not updated until MSB and LSB reading)
+*   big_endian - big/little endian data selection (0 - Little endian, 1 - Big endian)
+*   scale - scale selection (+-245, +-500 or +-2000dps)
 */
 #define L3GD20H_ctrl4(block_data_update, big_endian, scale) ( \
     (block_data_update? (0x1 << 7) : 0) | \
@@ -103,9 +103,9 @@
 )  // Defaulting to biggest range
 
 /* Helps to set up CTRL5 register.
-*   reboot_memory - Reboot memory content.
-*       (0 - normal mode; 1 - reboot memory content)
-*   FIFO_enable - enables FIFO buffer. (0 - FIFO off, 1 - FIFO on)
+*   reboot_memory - reboot memory content
+*       (0 - normal mode, 1 - reboot memory content)
+*   FIFO_enable - enables FIFO buffer (0 - FIFO off, 1 - FIFO on)
 *   FIFO_limit_enable - stops FIFO filling at threshold (0 - limit off, 1 - limit on)
 *   high_pass_enable - enables high pass filter (0 - filter off, 1 - filter on)
 */
@@ -116,8 +116,8 @@
     (high_pass_enable? (0x1 << 4) : 0) \
 )
 
-/* Helps to set up CTRL5 register.
-*   mode - sets FIFO mode (modes 1-7)
+/* Helps to set up FIFO_CTRL register.
+*   mode - sets FIFO mode (Available modes 1-7, see datasheet for more info)
 *   threshsold - number of FIFO registers to be filled to enable threshold status (0-32 registers)
 */
 #define L3GD20H_fifo_ctrl(mode, threshold) ( \
@@ -159,14 +159,17 @@
 #define L3GD20H_frequency 200
 #define L3GD20H_range 245
 #define L3GD20H_FIFO_READ 0x80
+#define x_enabled 0
+#define y_enabled 0
+#define z_enabled 1
 
 
 QueueHandle_t gyro_out;
 QueueHandle_t gyro_ctrl;
 
 
-void GyroQueueInit() {
-    gyro_out = xQueueCreate(1, sizeof(double) * 3);
+void L3GD20H_queue_init() {
+    gyro_out = xQueueCreate(1, sizeof(gyro_data));
     gyro_ctrl = xQueueCreate(1, sizeof(uint8_t));
 }
 
@@ -194,8 +197,8 @@ int L3GD20H_init() {
     status = I2C_Write(L3GD20H, L3GD20H_FIFO_CTRL, L3GD20H_fifo_ctrl(2, 30)); 
     // FIFO enabled, depth not limited, high pass filter disabled
     status = I2C_Write(L3GD20H, L3GD20H_CTRL5, L3GD20H_ctrl5(0, 1, 0, 0));  
-    // Setting data rate, active mode, only x axis enabled
-    status = I2C_Write(L3GD20H, L3GD20H_CTRL1, L3GD20H_ctrl1(L3GD20H_frequency, 1, 0, 0, 1)); 
+    // Setting data rate, active mode, enabling axes
+    status = I2C_Write(L3GD20H, L3GD20H_CTRL1, L3GD20H_ctrl1(L3GD20H_frequency, 1, x_enabled, y_enabled, z_enabled)); 
     
     // Startup sequence is now complete
     return status;
@@ -210,7 +213,7 @@ int L3GD20H_read(gyro_data *data) {
 int L3GD20H_calibrate() {
     uint8_t ctrl = 0;
     xQueueReceive(gyro_ctrl, &ctrl, 0);
-    ctrl |= 0x02;  // Setting calibration and reset bits
+    ctrl |= 0x02;  // Setting calibration bit
     return xQueueSendToBack(gyro_ctrl, &ctrl, 0);
 }
 
@@ -223,7 +226,7 @@ int L3GD20H_reset() {
 }
 
 
-void L3GD20H_Task() {
+void L3GD20H_task() {
     L3GD20H_init();
     
     uint8_t tmp[2] = {0};
@@ -233,15 +236,17 @@ void L3GD20H_Task() {
     
     gyro_data offset = {0, 0, 0};
     gyro_data gyro = {0, 0, 0};
-    double angle_batch = 0;
-    double angle = 0;
+    gyro_data angle_batch = {0, 0, 0};
+    gyro_data angle = {0, 0, 0};
     
     uint32_t delay = 100;
     
     while (1) {
         vTaskDelay(delay);
         xQueueReceive(gyro_ctrl, &task_ctrl, 0);
-        angle_batch = 0;
+        angle_batch.x = 0;
+        angle_batch.y = 0;
+        angle_batch.z = 0;
         
         I2C_Read(L3GD20H, L3GD20H_FIFO_SRC, &fifo_status);
         if (!L3GD20H_fifo_threshold(fifo_status)) {
@@ -256,21 +261,46 @@ void L3GD20H_Task() {
         }
         
         for (int i = 0; i < L3GD20H_fifo_unread_num(fifo_status); ++i) {
-            I2C_Read_Multiple(L3GD20H, L3GD20H_OUT_Z_L | L3GD20H_FIFO_READ, tmp, 2);
-            angle = L3GD20H_get_angle(tmp[0], tmp[1], L3GD20H_frequency, L3GD20H_range);
+            if (x_enabled) {
+                I2C_Read_Multiple(L3GD20H, L3GD20H_OUT_X_L | L3GD20H_FIFO_READ, tmp, 2);
+                
+                angle.x = L3GD20H_get_angle(tmp[0], tmp[1], L3GD20H_frequency, L3GD20H_range);
+                
+                angle_batch.x += angle.x;
+                gyro.x += (double) angle.x - offset.x;
+            }
             
-            angle_batch += angle;
-            gyro.z += (double) angle - offset.z;
+            if (y_enabled) {
+                I2C_Read_Multiple(L3GD20H, L3GD20H_OUT_Y_L | L3GD20H_FIFO_READ, tmp, 2);
+                
+                angle.y = L3GD20H_get_angle(tmp[0], tmp[1], L3GD20H_frequency, L3GD20H_range);
+                
+                angle_batch.y += angle.y;
+                gyro.y += (double) angle.y - offset.y;
+            }
+            
+            if (z_enabled) {
+                I2C_Read_Multiple(L3GD20H, L3GD20H_OUT_Z_L | L3GD20H_FIFO_READ, tmp, 2);
+                
+                angle.z = L3GD20H_get_angle(tmp[0], tmp[1], L3GD20H_frequency, L3GD20H_range);
+                
+                angle_batch.z += angle.z;
+                gyro.z += (double) angle.z - offset.z;
+            }
         }
         
         if (task_ctrl & 0x02) {  // Checking calibration bit
-            offset.z = angle_batch / L3GD20H_fifo_unread_num(fifo_status);
+            offset.x = angle_batch.x / L3GD20H_fifo_unread_num(fifo_status);
+            offset.y = angle_batch.y / L3GD20H_fifo_unread_num(fifo_status);
+            offset.z = angle_batch.z / L3GD20H_fifo_unread_num(fifo_status);
             
             task_ctrl &= 0xFD;  // Clearing calibration bit
         }
         
         if (task_ctrl & 0x01) {  // Checking reset bit
-            gyro.z = 0;  // Resetting the position
+            gyro.x = 0;
+            gyro.y = 0;  // Resetting the position
+            gyro.z = 0;
             
             task_ctrl &= 0xFE;  // Clearing reset bit
         }

@@ -32,8 +32,9 @@
     int L3GD20H_reset();
     int L3GD20H_calibrate();
     
-    void GyroQueueInit();
-    void L3GD20H_Task();
+    // Do not use
+    void L3GD20H_queue_init();
+    void L3GD20H_task();
     
 #endif
 
