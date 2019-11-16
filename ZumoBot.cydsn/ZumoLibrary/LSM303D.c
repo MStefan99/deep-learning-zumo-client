@@ -79,10 +79,11 @@
 
 // Macros for easy setup
 
+
 // Returns time between samples
 #define LSM303D_dt(freq) (1.0 / freq)
 
-// Returns sensor sensitivity for chosen range
+// Returns acceleration sensitivity of the sensor
 #define LSM303D_acc_sensitivity(scale) ( \
     (scale == 2)? 0.000061 : \
     (scale == 4)? 0.000122 : \
@@ -90,7 +91,8 @@
     (scale == 8)? 0.000244 : \
     0.000734 \
 )  // Defaulting to widest range
-    
+
+// Returns magnetic sensitivity of the sensor
 #define LSM303D_mag_sensitivity(scale) ( \
     (scale == 2)? 0.00008 : \
     (scale == 4)? 0.00016 : \
@@ -98,6 +100,7 @@
     0.000479 \
 )  // Defaulting to highest range
 
+// Do not use
 #define LSM303D_aodr(freq) ( \
     (freq == 0)? 0 : \
     (freq == 3.125)? (0x0 << 2): \
@@ -112,7 +115,8 @@
     (freq == 1600)? (0x0A << 4): \
     (0x05 << 4) \
 ) // Defaulting to 50 Hz
-    
+
+// Do not use
 #define LSM303D_modr(freq) ( \
     (freq == 3.125)? (0x0 << 2): \
     (freq == 6.25)? (0x1 << 2): \
@@ -123,12 +127,25 @@
     (0x0 << 2) \
 ) // Defaulting to 3.125 Hz
 
+/* Helps to set up CTRL0 register.
+*   reboot_memory - reboot_memory - Reboot memory content
+*       (0 - normal mode, 1 - reboot memory content)
+*   FIFO_enable - enables FIFO buffer (0 - FIFO off, 1 - FIFO on)
+*   FIFO_limit_enable - stops FIFO filling at threshold (0 - limit off, 1 - limit on)
+*/
 #define LSM303D_ctrl0(reboot_memory, FIFO_enable, FIFO_limit_enable) ( \
     (reboot_memory? (0x1 << 7) : 0) | \
     (FIFO_enable? (0x1 << 6) : 0) | \
     (FIFO_limit_enable? (0x1 << 5) : 0) \
 )
 
+/* Helps to set up CTRL1 register.
+*   freq - acceleration sampling frequency (see datasheet or "LSM303D_aodr" for available values)
+*   block_data_update - block data update
+*       (0 - continuos update, 1 - output registers not updated until MSB and LSB reading)
+*   power_on - enables active mode (0 - sleep mode, 1 - active mode)
+*   last 3 parameters are used to individually activate 3 sensor axes: x, y and z (0 - off, 1 - on)
+*/
 #define LSM303D_ctrl1(freq, block_data_update, x_enable, y_enable, z_enable) ( \
     (LSM303D_aodr(freq)) | \
     (block_data_update? (0x1 << 3) : 0) | \
@@ -137,6 +154,9 @@
     (z_enable? (0x01 << 2) : 0) \
 )
 
+/* Helps to set up CTRL4 register.
+*   scale - acceleration scale selection (+-2, +-4, +-6, +-8 or +-16 g)
+*/
 #define LSM303D_ctrl2(scale) ( \
     (scale == 2)? (0x0 << 3): \
     (scale == 4)? (0x1 << 3): \
@@ -144,13 +164,21 @@
     (scale == 8)? (0x3 << 3): \
     (0x4 << 3) \
 )  // Defaulting to widest range
-    
-#define LSM303D_ctrl5(temp_enable, magnetic_resolution, magnetic_freq) ( \
+
+/* Helps to set up CTRL5 register.
+*   temp_enable - enable temperature sensor (0 - off, 1 - off)
+*   magnetic_high_resolution - enable high magnetic sensor resolution (0 - low, 1- high)
+*   magneetic_freq - magnetic sampling frequency (see datasheet or "LSM303D_modr" for available values)
+*/
+#define LSM303D_ctrl5(temp_enable, magnetic_high_resolution, magnetic_freq) ( \
     LSM303D_modr(magnetic_freq) | \
     (temp_enable? (0x01 << 7) : 0) | \
-    (magnetic_resolution? (0x3 << 5) : 0) \
+    (magnetic_high_resolution? (0x3 << 5) : 0) \
 )
-
+    
+/* Helps to set up CTRL6 register.
+*   scale - magnetic scale selection (+-2, +-4, +-8 or +-12 gauss)
+*/
 #define LSM303D_ctrl6(scale) ( \
     (scale == 2)? (0x0 << 5): \
     (scale == 4)? (0x1 << 5): \
@@ -159,31 +187,38 @@
     (0x3 << 5) \
 )  // Defaulting to widest range
     
+/* Helps to set up CTRL7 register.
+*   mode - magnetic mode selection (Available modes 0-3, see datasheet for more info)
+*/
 #define LSM303D_ctrl7(magnetic_mode) ( \
     (magnetic_mode) \
 )
-    
+
+/* Helps to set up FIFO_CTRL register.
+*   mode - sets FIFO mode (Available modes 1-7, see datasheet for more info)
+*   threshsold - number of FIFO registers to be filled to enable threshold status (0-32 registers)
+*/
 #define LSM303D_fifo_ctrl(fifo_mode, threshold) ( \
     (fifo_mode << 5) | \
     (threshold) \
 )
-    
+
 #define LSM303D_fifo_threshold(fifo_src_reg) ( \
     (fifo_src_reg & 0x80) \
 )
-    
+
 #define LSM303D_fifo_overrun(fifo_src_reg) ( \
     (fifo_src_reg & 0x40) \
 )
-    
+
 #define LSM303D_fifo_empty(fifo_src_reg) ( \
     (fifo_src_reg & 0x20) \
 )
-    
+
 #define LSM303D_fifo_unread_num(fifo_src_reg) ( \
     (fifo_src_reg & 0x1F) \
 )
-    
+
 #define LSM303D_data_overrun(status_reg) ( \
     (a_status_reg & 0x80) \
 )
