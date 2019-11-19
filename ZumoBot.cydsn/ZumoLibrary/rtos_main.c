@@ -81,13 +81,13 @@ int main( void )
 	/* Start tasks. */
   	//( void ) xTaskCreate( DebugUartTask, "DbgUart", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
   	//( void ) xTaskCreate( DebugCommandTask, "DbgCmd", configMINIMAL_STACK_SIZE * 3, NULL, tskIDLE_PRIORITY + 1, NULL );
-  	xTaskCreate(start_zmain, "Main", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(start_zmain, "Main", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(voltage_task, "Voltage check", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(L3GD20H_task, "Gyro task", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
-    xTaskCreate(LSM303D_task, "Acc task", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
-#if START_MQTT == 1
-    xTaskCreate(SMQTTTask, "SMQTTTASK", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
-#endif    
+    //xTaskCreate(LSM303D_task, "Acc task", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
+    if (START_MQTT) {
+        xTaskCreate(SMQTTTask, "SMQTTTASK", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
+    }
     
 	/* Will only get here if there was insufficient memory to create the idle
     task.  The idle task is created within vTaskStartScheduler(). */

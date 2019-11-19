@@ -13,7 +13,7 @@
 #include "movement.h"
 
 
-#define ANGLE 82.0
+#define ANGLE 90.0
 
 
 const float p_coefficient = 1.5;

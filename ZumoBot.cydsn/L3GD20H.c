@@ -59,7 +59,7 @@
 
 
 // Returns time between samples
-#define L3GD20H_dt(freq) (1.0 / freq)
+#define L3GD20H_dt(freq) (1.0 / L3GD20H_real_data_rate(freq))
 
 // Returns sensor sensitivity for chosen range
 #define L3GD20H_sensitivity(scale) ( \
@@ -74,6 +74,14 @@
     (freq == 400)? (0xB << 4): \
     (freq == 800)? (0xE << 4): \
     (0x3 << 4) \
+) // Defaulting to 100 Hz
+
+#define L3GD20H_real_data_rate(freq) (\
+    (freq == 100)? (94.7): \
+    (freq == 200)? (189.4): \
+    (freq == 400)? (378.8): \
+    (freq == 800)? (757.6): \
+    (94.7) \
 ) // Defaulting to 100 Hz
 
 /* Helps to set up CTRL1 register.
