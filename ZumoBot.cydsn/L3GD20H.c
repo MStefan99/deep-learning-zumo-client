@@ -172,12 +172,11 @@
 #define z_enabled 1
 
 
-QueueHandle_t gyro_out;
+static gyro_data gyro_out;
 QueueHandle_t gyro_ctrl;
 
 
 void L3GD20H_queue_init() {
-    gyro_out = xQueueCreate(1, sizeof(gyro_data));
     gyro_ctrl = xQueueCreate(1, sizeof(uint8_t));
 }
 
@@ -214,7 +213,8 @@ int L3GD20H_init() {
 
 
 int L3GD20H_read(gyro_data *data) {
-    return xQueueReceive(gyro_out, data, 0);
+    *data = gyro_out;
+    return 0;
 }
 
 
@@ -243,7 +243,6 @@ void L3GD20H_task() {
     uint8_t fifo_status = 0x0;
     
     gyro_data offset = {0, 0, 0};
-    gyro_data gyro = {0, 0, 0};
     gyro_data angle_batch = {0, 0, 0};
     gyro_data angle = {0, 0, 0};
     
@@ -275,7 +274,7 @@ void L3GD20H_task() {
                 angle.x = L3GD20H_get_angle(tmp[0], tmp[1], L3GD20H_frequency, L3GD20H_range);
                 
                 angle_batch.x += angle.x;
-                gyro.x += (double) angle.x - offset.x;
+                gyro_out.x += (double) angle.x - offset.x;
             }
             
             if (y_enabled) {
@@ -284,7 +283,7 @@ void L3GD20H_task() {
                 angle.y = L3GD20H_get_angle(tmp[0], tmp[1], L3GD20H_frequency, L3GD20H_range);
                 
                 angle_batch.y += angle.y;
-                gyro.y += (double) angle.y - offset.y;
+                gyro_out.y += (double) angle.y - offset.y;
             }
             
             if (z_enabled) {
@@ -293,7 +292,7 @@ void L3GD20H_task() {
                 angle.z = L3GD20H_get_angle(tmp[0], tmp[1], L3GD20H_frequency, L3GD20H_range);
                 
                 angle_batch.z += angle.z;
-                gyro.z += (double) angle.z - offset.z;
+                gyro_out.z += (double) angle.z - offset.z;
             }
         }
         
@@ -306,15 +305,12 @@ void L3GD20H_task() {
         }
         
         if (task_ctrl & 0x01) {  // Checking reset bit
-            gyro.x = 0;
-            gyro.y = 0;  // Resetting the position
-            gyro.z = 0;
+            gyro_out.x = 0;
+            gyro_out.y = 0;  // Resetting the position
+            gyro_out.z = 0;
             
             task_ctrl &= 0xFE;  // Clearing reset bit
         }
-        
-        xQueueReset(gyro_out);
-        xQueueSendToBack(gyro_out, &gyro, 0);
         
         if (L3GD20H_fifo_overrun(status_reg) && delay > 1) {
             delay -=5;  // Overwriting data, output ok, polling rate should be increased
