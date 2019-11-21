@@ -231,10 +231,18 @@
     (int16_t)(out_acc_h << 8 | out_acc_l) * LSM303D_acc_sensitivity(scale) * G \
 )
 
+#define LSM303D_get_mag(out_acc_h, out_acc_l, scale) ( \
+    (int16_t)(out_acc_h << 8 | out_acc_l) * LSM303D_mag_sensitivity(scale) \
+)
+
 // End of setup macros
 
-#define LSM303D_range 2
-#define LSM303D_frequency 200
+#define LSM303D_acc_range 2
+#define LSM303D_acc_frequency 200
+
+#define LSM303D_mag_range 12
+#define LSM303D_mag_frequency 25
+
 #define LSM303D_FIFO_READ 0x80
 #define x_enabled 1
 #define y_enabled 1
@@ -257,9 +265,15 @@ int LSM303D_init() {
     // FIFO enabled, FIFO limit off
     status = I2C_Write(LSM303D, LSM303D_CTRL0, LSM303D_ctrl0(0, 1, 0)); 
     // Setting accelerometer frequency, enabling axes
-    status = I2C_Write(LSM303D, LSM303D_CTRL1, LSM303D_ctrl1(LSM303D_frequency, 0, x_enabled, y_enabled, z_enabled));
+    status = I2C_Write(LSM303D, LSM303D_CTRL1, LSM303D_ctrl1(LSM303D_acc_frequency, 0, x_enabled, y_enabled, z_enabled));
     // Setting accelerometer range
-    status = I2C_Write(LSM303D, LSM303D_CTRL2, LSM303D_ctrl2(LSM303D_range));
+    status = I2C_Write(LSM303D, LSM303D_CTRL2, LSM303D_ctrl2(LSM303D_acc_range));
+    // Setting magnetic frequency, high precision
+    status = I2C_Write(LSM303D, LSM303D_CTRL5, LSM303D_ctrl5(0, 1, LSM303D_mag_frequency));
+    // Setting magnetic range
+    status = I2C_Write(LSM303D, LSM303D_CTRL6, LSM303D_ctrl6(LSM303D_mag_range));
+    // Setting continous magnetic mode
+    status = I2C_Write(LSM303D, LSM303D_CTRL7, LSM303D_ctrl7(0));
     // Enabling FIFO in stream mode, setting FIFO threshold
     status = I2C_Write(LSM303D, LSM303D_FIFO_CTRL, LSM303D_fifo_ctrl(2, 30));
     
@@ -306,18 +320,25 @@ void LSM303D_task() {
         for (int i = 0; i < LSM303D_fifo_unread_num(fifo_status); ++i) {
             if (x_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_X_L_A | LSM303D_FIFO_READ, tmp, 2);
-                acc.x = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range);
+                acc.x = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_acc_range);
             }
             
             if (y_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_Y_L_A | LSM303D_FIFO_READ, tmp, 2);
-                acc.y = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range);
+                acc.y = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_acc_range);
             }
             
             if (z_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_Z_L_A | LSM303D_FIFO_READ, tmp, 2);
-                acc.z = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range);
+                acc.z = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_acc_range);
             }
+            
+            I2C_Read_Multiple(LSM303D, LSM303D_OUT_X_L_M | LSM303D_FIFO_READ, tmp, 2);
+            mag.x = LSM303D_get_mag(tmp[1], tmp[0], LSM303D_acc_range);
+            I2C_Read_Multiple(LSM303D, LSM303D_OUT_Y_L_M | LSM303D_FIFO_READ, tmp, 2);
+            mag.y = LSM303D_get_mag(tmp[1], tmp[0], LSM303D_acc_range);
+            I2C_Read_Multiple(LSM303D, LSM303D_OUT_Z_L_M | LSM303D_FIFO_READ, tmp, 2);
+            mag.z = LSM303D_get_mag(tmp[1], tmp[0], LSM303D_acc_range);
         }
              
         if (LSM303D_fifo_overrun(status_reg) && delay > 1) {
