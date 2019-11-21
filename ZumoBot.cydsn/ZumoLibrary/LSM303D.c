@@ -228,11 +228,7 @@
 )
 
 #define LSM303D_get_acc(out_acc_h, out_acc_l, scale) ( \
-    (int16_t)(out_acc_h << 8 | out_acc_l) * LSM303D_acc_sensitivity(scale) \
-)
-
-#define LSM303D_get_pos(out_acc_h, out_acc_l, freq, scale) ( \
-    (int16_t)(out_acc_h << 8 | out_acc_l) * LSM303D_dt(freq) * LSM303D_acc_sensitivity(scale) \
+    (int16_t)(out_acc_h << 8 | out_acc_l) * LSM303D_acc_sensitivity(scale) * G \
 )
 
 // End of setup macros
@@ -244,22 +240,11 @@
 #define y_enabled 1
 #define z_enabled 1
 
-
-QueueHandle_t accelerometer_acc_out;
-QueueHandle_t accelerometer_spd_out;
-QueueHandle_t accelerometer_ctrl;
-
-
-void LSM303D_queue_init() {
-    accelerometer_acc_out = xQueueCreate(1, sizeof(accelerometer_data));
-    accelerometer_spd_out = xQueueCreate(1, sizeof(accelerometer_data));
-    accelerometer_ctrl = xQueueCreate(1, sizeof(uint8_t));
-}
+static accelerometer_data acc = {0, 0, 0};
+static accelerometer_data mag = {0, 0, 0};
 
 
 int LSM303D_init() {
-    I2C_Start();
-    
     uint8_t wai;
     int status = 0;
     status = I2C_Read(LSM303D, LSM303D_WHO_AM_I, &wai);
@@ -284,28 +269,14 @@ int LSM303D_init() {
 
 
 int LSM303D_read_acc(accelerometer_data *data) {
-    return xQueueReceive(accelerometer_acc_out, data, 0);
+    *data = acc;
+    return 0;
 }
 
 
-int LSM303D_read_spd(accelerometer_data *data) {
-    return xQueueReceive(accelerometer_spd_out, data, 0);
-}
-
-
-int LSM303D_calibrate() {
-    uint8_t ctrl = 0;
-    xQueueReceive(accelerometer_ctrl, &ctrl, 0);
-    ctrl |= 0x02;  // Setting calibration bit
-    return xQueueSendToBack(accelerometer_ctrl, &ctrl, 0);
-}
-
-
-int LSM303D_reset() {
-    uint8_t ctrl = 0;
-    xQueueReceive(accelerometer_ctrl, &ctrl, 0);
-    ctrl |= 0x01;  // Setting reset bit
-    return xQueueSendToBack(accelerometer_ctrl, &ctrl, 0);
+int LSM303D_read_mag(accelerometer_data *data) {
+    *data = mag;
+    return 0;
 }
 
 
@@ -314,27 +285,16 @@ void LSM303D_task() {
     
     uint8_t tmp[2] = {0};
     uint8_t status_reg = 0x0;
-    uint8_t task_ctrl = 0x0;
     uint8_t fifo_status = 0x0;
-    
-    accelerometer_data acc = {0, 0, 0};
-    accelerometer_data acc_batch = {0, 0, 0};
-    accelerometer_data offset = {0, 0, 0};
-    accelerometer_data spd = {0, 0, 0};
     
     uint32_t delay = 100;
     
     while (1) {
         vTaskDelay(delay);
-        xQueueReceive(accelerometer_ctrl, &task_ctrl, 0);
-        acc_batch.x = 0;
-        acc_batch.y = 0;
-        acc_batch.z = 0;
-        
         I2C_Read(LSM303D, LSM303D_FIFO_SRC, &fifo_status);
+        
         if (!LSM303D_fifo_threshold(fifo_status)) {
             ++delay;  // FIFO not filled completely, we can decrease polling rate to reduce load
-            
             if (LSM303D_fifo_empty(fifo_status)) {
                 delay += 5;  // FIFO empty, output undefined, polling rate should be decreased
                 continue;  // Skipping data reading
@@ -346,54 +306,20 @@ void LSM303D_task() {
         for (int i = 0; i < LSM303D_fifo_unread_num(fifo_status); ++i) {
             if (x_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_X_L_A | LSM303D_FIFO_READ, tmp, 2);
-                
-                acc_batch.x += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) * G - offset.x;
-                spd.x += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) * G
-                    - offset.x * LSM303D_dt(LSM303D_frequency);
+                acc.x = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range);
             }
             
             if (y_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_Y_L_A | LSM303D_FIFO_READ, tmp, 2);
-                
-                acc_batch.y += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) * G - offset.y;
-                spd.y += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) * G
-                    - offset.y * LSM303D_dt(LSM303D_frequency);
+                acc.y = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range);
             }
             
             if (z_enabled) {
                 I2C_Read_Multiple(LSM303D, LSM303D_OUT_Z_L_A | LSM303D_FIFO_READ, tmp, 2);
-                
-                acc_batch.z += LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range) * G - offset.z;
-                spd.z += (double) LSM303D_get_pos(tmp[1], tmp[0], LSM303D_frequency, LSM303D_range) * G
-                    - offset.z * LSM303D_dt(LSM303D_frequency);
+                acc.z = LSM303D_get_acc(tmp[1], tmp[0], LSM303D_range);
             }
         }
-        
-        acc.x = acc_batch.x / LSM303D_fifo_unread_num(fifo_status);
-        acc.y = acc_batch.y / LSM303D_fifo_unread_num(fifo_status);
-        acc.z = acc_batch.z / LSM303D_fifo_unread_num(fifo_status);
-        
-        if (task_ctrl & 0x02) {  // Checking calibration bit
-            offset.x = acc.x;
-            offset.y = acc.y;
-            offset.z = acc.z;
-            
-            task_ctrl &= 0xFD;  // Clearing calibration bit
-        }
-        
-        if (task_ctrl & 0x01) {  // Checking reset bit
-            spd.x = 0;  // Resetting the position
-            spd.y = 0;
-            spd.z = 0;
-            
-            task_ctrl &= 0xFE;  // Clearing reset bit
-        }
-        
-        xQueueReset(accelerometer_acc_out);
-        xQueueReset(accelerometer_spd_out);
-        xQueueSendToBack(accelerometer_acc_out, &acc, 0);
-        xQueueSendToBack(accelerometer_spd_out, &spd, 0);
-        
+             
         if (LSM303D_fifo_overrun(status_reg) && delay > 1) {
             delay -=5;  // Overwriting data, output ok, polling rate should be increased
         }

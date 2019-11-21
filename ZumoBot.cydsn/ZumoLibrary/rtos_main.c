@@ -42,6 +42,7 @@
 #include "voltage.h"
 #include "L3GD20H.h"
 #include "LSM303D.h"
+#include "I2C_Common.h"
 
 #ifndef START_MQTT
 #define START_MQTT 0
@@ -75,8 +76,9 @@ int main( void )
     RetargetInit();
     DebugUartTaskInit();
     SMQTTQueueInit();
-    LSM303D_queue_init();
     L3GD20H_queue_init();
+    I2C_setup();
+    I2C_Start();
     
 	/* Start tasks. */
   	//( void ) xTaskCreate( DebugUartTask, "DbgUart", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
@@ -84,7 +86,7 @@ int main( void )
     xTaskCreate(start_zmain, "Main", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(voltage_task, "Voltage check", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(L3GD20H_task, "Gyro task", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
-    //xTaskCreate(LSM303D_task, "Acc task", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
+    xTaskCreate(LSM303D_task, "Acc task", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
     if (START_MQTT) {
         xTaskCreate(SMQTTTask, "SMQTTTASK", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
     }

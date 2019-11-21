@@ -24,12 +24,11 @@
     
     int LSM303D_init();
     int LSM303D_read_acc(accelerometer_data *data);
-    int LSM303D_read_spd(accelerometer_data *data);
+    int LSM303D_read_mag(accelerometer_data *data);
     int LSM303D_reset();
     int LSM303D_calibrate();
     
     // Do not use
-    void LSM303D_queue_init();
     void LSM303D_task();
 #endif
 /* [] END OF FILE */

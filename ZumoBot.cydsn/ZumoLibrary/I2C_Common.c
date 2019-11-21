@@ -6,6 +6,14 @@
 #include "I2C_Common.h"
 
 
+SemaphoreHandle_t master_1;
+
+
+void I2C_setup() {
+    master_1 = xSemaphoreCreateMutex();
+}
+
+
 /**
 * @brief    Function for generic I2C byte write
 * @details  Single byte write 
@@ -14,17 +22,20 @@
 * @param    uint8 data : value to be written
 */
 int I2C_Write(uint8_t device_addr, uint8_t reg_addr, uint8_t data) {
-    int status = 0;
+    int status = -1;
     
-    I2C_MasterSendStart(device_addr, 0);
-    if (!status) {
-        status = I2C_MasterWriteByte(reg_addr);
+    if (xSemaphoreTake(master_1, portMAX_DELAY) == pdTRUE) {
+        status = I2C_MasterSendStart(device_addr, 0);
+        if (!status) {
+            status = I2C_MasterWriteByte(reg_addr);
+        }
+        if (!status) {
+            status = I2C_MasterWriteByte(data);
+        }
+        I2C_MasterSendStop();
+        
+        xSemaphoreGive(master_1);
     }
-    if (!status) {
-        status = I2C_MasterWriteByte(data);
-    }
-    I2C_MasterSendStop();
-    
     return status;
 }
 
@@ -51,22 +62,25 @@ int I2C_Read(uint8_t device_addr, uint8_t reg_addr, uint8_t* data) {
 */
 
 int I2C_Read_Multiple(uint8_t device_addr, uint8_t reg_addr, uint8_t* data, uint8_t count) {
-    int status = 0;
+    int status = -1;
     
-    status = I2C_MasterSendStart(device_addr, 0);
-    if (!status) {
-        status = I2C_MasterWriteByte(reg_addr);
-    }
-    if (!status) {
-        status = I2C_MasterSendRestart(device_addr, 1);
-    }
-    if (!status) {
-        for (int i = 0; i < count; i++) {
-            data[i] = I2C_MasterReadByte(i == count - 1 ? I2C_2_NAK_DATA:I2C_2_ACK_DATA);
+    if (xSemaphoreTake(master_1, portMAX_DELAY) == pdTRUE) {
+        status = I2C_MasterSendStart(device_addr, 0);
+        if (!status) {
+            status = I2C_MasterWriteByte(reg_addr);
         }
+        if (!status) {
+            status = I2C_MasterSendRestart(device_addr, 1);
+        }
+        if (!status) {
+            for (int i = 0; i < count; i++) {
+                data[i] = I2C_MasterReadByte(i == count - 1 ? I2C_2_NAK_DATA:I2C_2_ACK_DATA);
+            }
+        }
+        I2C_MasterSendStop();
+        
+        xSemaphoreGive(master_1);
     }
-    I2C_MasterSendStop();
-    
     return status;
 }
 
@@ -111,7 +125,7 @@ int I2C_2_Write_Multiple(uint8_t device_addr, uint8_t reg_addr, uint8_t* data, u
         printf("Writing data to device %#04x, register %#04x...\n", device_addr, reg_addr);
     }
     
-    I2C_2_MasterSendStart(device_addr, 0);
+    status = I2C_2_MasterSendStart(device_addr, 0);
     if (!status) {
         status = I2C_2_MasterWriteByte(reg_addr);
     }

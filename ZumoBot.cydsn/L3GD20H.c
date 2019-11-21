@@ -182,8 +182,6 @@ void L3GD20H_queue_init() {
 
 
 int L3GD20H_init() {
-    I2C_Start();
-    
     uint8_t wai;
     int status = 0;
     status = I2C_Read(L3GD20H, L3GD20H_WHO_AM_I, &wai);
@@ -249,8 +247,7 @@ void L3GD20H_task() {
     uint32_t delay = 100;
     
     while (1) {
-        vTaskDelay(delay);
-        xQueueReceive(gyro_ctrl, &task_ctrl, 0);
+        xQueueReceive(gyro_ctrl, &task_ctrl, delay);
         angle_batch.x = 0;
         angle_batch.y = 0;
         angle_batch.z = 0;
