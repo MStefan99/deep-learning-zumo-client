@@ -167,6 +167,7 @@
 #define L3GD20H_frequency 200
 #define L3GD20H_range 245
 #define L3GD20H_FIFO_READ 0x80
+#define L3GD20H_FIFO_depth 30 
 #define x_enabled 0
 #define y_enabled 0
 #define z_enabled 1
@@ -199,7 +200,7 @@ int L3GD20H_init() {
     // Interrupts should be set up here by writing to IG_THS, IG_DURATION and IG_CFG but interrupt pin isn't connected
     
     // Enabling FIFO in stream mode, setting FIFO threshold
-    status = I2C_Write(L3GD20H, L3GD20H_FIFO_CTRL, L3GD20H_fifo_ctrl(2, 30)); 
+    status = I2C_Write(L3GD20H, L3GD20H_FIFO_CTRL, L3GD20H_fifo_ctrl(2, L3GD20H_FIFO_depth)); 
     // FIFO enabled, depth not limited, high pass filter disabled
     status = I2C_Write(L3GD20H, L3GD20H_CTRL5, L3GD20H_ctrl5(0, 1, 0, 0));  
     // Setting data rate, active mode, enabling axes
@@ -260,7 +261,7 @@ void L3GD20H_task() {
                 delay += 5;  // FIFO empty, output undefined, polling rate should be decreased
                 continue;  // Skipping data reading
             }
-        } else {
+        } else if (delay > 1) {
             --delay;  // FIFO almost filled, polling rate should be increased 
         }
         
@@ -309,7 +310,7 @@ void L3GD20H_task() {
             task_ctrl &= 0xFE;  // Clearing reset bit
         }
         
-        if (L3GD20H_fifo_overrun(status_reg) && delay > 1) {
+        if (L3GD20H_fifo_overrun(status_reg) && delay > 5) {
             delay -=5;  // Overwriting data, output ok, polling rate should be increased
         }
     }

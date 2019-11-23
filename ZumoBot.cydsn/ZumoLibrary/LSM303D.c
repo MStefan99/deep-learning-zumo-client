@@ -244,6 +244,7 @@
 #define LSM303D_mag_frequency 25
 
 #define LSM303D_FIFO_READ 0x80
+#define LSM303D_FIFO_depth 30
 #define x_enabled 1
 #define y_enabled 1
 #define z_enabled 1
@@ -275,9 +276,9 @@ int LSM303D_init() {
     // Setting continous magnetic mode
     status = I2C_Write(LSM303D, LSM303D_CTRL7, LSM303D_ctrl7(0));
     // Enabling FIFO in stream mode, setting FIFO threshold
-    status = I2C_Write(LSM303D, LSM303D_FIFO_CTRL, LSM303D_fifo_ctrl(2, 30));
+    status = I2C_Write(LSM303D, LSM303D_FIFO_CTRL, LSM303D_fifo_ctrl(2, LSM303D_FIFO_depth));
     
-    // Startup sequence complete    
+    // Startup sequence complete
     return status;
 }
 
@@ -313,7 +314,7 @@ void LSM303D_task() {
                 delay += 5;  // FIFO empty, output undefined, polling rate should be decreased
                 continue;  // Skipping data reading
             }
-        } else {
+        } else if (delay > 1) {
             --delay;  // FIFO almost filled, polling rate should be increased 
         }
         
@@ -341,7 +342,7 @@ void LSM303D_task() {
             mag.z = LSM303D_get_mag(tmp[1], tmp[0], LSM303D_acc_range);
         }
              
-        if (LSM303D_fifo_overrun(status_reg) && delay > 1) {
+        if (LSM303D_fifo_overrun(status_reg) && delay > 5) {
             delay -=5;  // Overwriting data, output ok, polling rate should be increased
         }
     }
