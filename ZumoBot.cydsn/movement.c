@@ -14,9 +14,11 @@
 
 
 #define ANGLE 90.0
+#define LINE_WIDTH 0.02
+#define DIST_TO_CENTER 0.02
 
 
-const float p_coefficient = 1.5;
+const float p_coefficient = 1.0;
 position robot_position = {3, 12, 0};
 
 
@@ -65,19 +67,25 @@ void motor_turn_diff(uint8_t speed, int diff) {
 void move_to_next(uint8_t speed) {
     if (MOVEMENT_ENABLED) {
         int shift_correction;
+        uint32_t t;
+        double dt;
+        double spd;
         
         while (!intersection_detected()) {
             shift_correction = get_line_pos() * p_coefficient;
             motor_turn_diff(speed, shift_correction);
         }
         
+        t = xTaskGetTickCount();
         while (intersection_detected()) {
             PWM_WriteCompare1(speed);
             PWM_WriteCompare2(speed);
         }
-        PWM_WriteCompare1(speed);
-        PWM_WriteCompare2(speed);
-        vTaskDelay(125);
+        dt = (xTaskGetTickCount() - t) / 1000.0;
+        spd = LINE_WIDTH / dt;
+        dt = DIST_TO_CENTER / spd;
+        
+        vTaskDelay((uint32_t)(dt * 1000));
         motor_reset();
     } else {
         vTaskDelay(500);
@@ -113,6 +121,7 @@ void motor_rotate(int side, uint8_t speed) {
         gyro_data g = {0, 0, 0};
         motor_reset();
         vTaskDelay(100);
+        
         L3GD20H_calibrate();
         L3GD20H_reset();
         do {

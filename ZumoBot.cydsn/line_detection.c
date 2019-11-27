@@ -73,7 +73,6 @@ int get_line_pos() {
     
     int setpoint_value_inner = 21500;
     int setpoint_value_outer = 5000;
-    int threshold = 15000;
     
     // white - 4200
     // black - 23600
@@ -84,10 +83,6 @@ int get_line_pos() {
     int delta_l2 = setpoint_value_outer - ref.l2;
     int delta_r3 = ref.r3 - setpoint_value_outer;
     int delta_l3 = setpoint_value_outer - ref.l3;
-    
-    if (ref.r1 > threshold && ref.l1 > threshold) {
-        return 0;
-    }
     
     return (delta_r1 + delta_l1 + delta_r2 + delta_l2 + delta_r3 + delta_l3) / 180;
 }
