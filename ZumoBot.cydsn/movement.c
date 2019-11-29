@@ -13,7 +13,7 @@
 #include "movement.h"
 
 
-#define ANGLE 90.0
+#define ANGLE 60.0
 #define LINE_WIDTH 0.02
 #define DIST_TO_CENTER 0.02
 
@@ -129,6 +129,10 @@ void motor_rotate(int side, uint8_t speed) {
             motor_tank_turn(side, speed);
             printf("%f\n", g.z);
         } while (fabs(g.z) < ANGLE);
+        
+        while (!line_centered()) {
+            motor_tank_turn(side, speed);
+        }
         motor_reset();
     } else {
         vTaskDelay(500);
