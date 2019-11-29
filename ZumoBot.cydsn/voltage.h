@@ -19,9 +19,6 @@
     #include "smqtt.h"
     
     
-    extern bool low_voltage_detected;
-    
-    
     float battery_voltage();
     int voltage_test();
     void voltage_task();
