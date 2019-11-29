@@ -30,15 +30,13 @@
     } list;
 
     
+    list new_list();
+    
     int list_append(list *l, const void *content, size_t size);
     int list_pop(list *l, void *content, size_t size);
     void list_wipe(list *l);
     int list_get_size(list l);
     void list_print_all(list l, void (*print_element)(const void *element));
-    
-    
-    // DON'T USE THE FOLLOWING FUNCTIONS!
-    list new_list();
 
 #endif
 

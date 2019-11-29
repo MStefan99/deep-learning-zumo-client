@@ -100,13 +100,12 @@ void SMQTTTask() {
             }
         }
         
-        while (xQueueReceive(out_q, (void *)&buf_out, 0) == pdTRUE) {
+        while (xQueueReceive(out_q, (void *)&buf_out, 1000) == pdTRUE) {
             buf_m.payload = buf_out.message;
             buf_m.payloadlen = strlen(buf_out.message);
             
             MQTTPublish(&client, buf_out.topic, &buf_m);
         }
-        vTaskDelay(1000);
     }
 }
 

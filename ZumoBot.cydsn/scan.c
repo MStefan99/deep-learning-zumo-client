@@ -50,7 +50,6 @@ void pre_scan(uint8_t speed) {
         move_to_next(speed);
     }
     send_coords();
-    rotate_to(0, speed);
 }
 
 
@@ -60,7 +59,7 @@ int scan(tile *t) {
     double dist = 0;
     double std_dev = 0;
     
-    measure_distance(&dist, &std_dev, 10);
+    measure_distance(&dist, &std_dev, 25);
     int dist_tiles = (dist + (double)pos_fix) / tile_size;
     
     

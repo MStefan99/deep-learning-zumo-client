@@ -173,6 +173,8 @@ void rotate_to(int dir, uint8_t speed) {
 
 
 void complete_track(uint8_t speed) {
+    rotate_to(0, speed);
+    move_to_next(speed);
     while (robot_position.x != 3) {
         if (robot_position.x > 3) {
             rotate_to(3, speed);
@@ -182,8 +184,8 @@ void complete_track(uint8_t speed) {
             move_to_next(speed);
         }
     }
+    
     rotate_to(0, speed);
-    move_to_next(speed);
     move_to_next(speed);
     move_to_next(speed);
 }

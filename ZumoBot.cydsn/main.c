@@ -1,5 +1,6 @@
 #include "main.h"
 
+
 bool calibrated = false;
 static uint8_t speed = 100;
 tile t;
@@ -41,11 +42,12 @@ int zmain(void) {
             case WAIT_STATE:
                 if (mqtt_receive(&msg)) {
                     if (!strcmp(msg.topic, "Ctrl/Net/Status") && !strcmp(msg.message, "Ready")) {
-                        mqtt_print("Ack/Zumo" , "Ready");
                         mqtt_print("Ctrl/Zumo/Version", "%s", mqtt_version);
+                        mqtt_print("Ack/Zumo" , "Ready");
                     }
                     
                     if (!strcmp(msg.topic, "Ctrl/Net/Version")) {
+                        mqtt_print("Ack/Zumo" , "Version");
                         if (!strcmp(msg.message, mqtt_version)) {
                             mqtt_print("Info/Zumo/Connect" , "Server found");
                             change_state(PRESCAN_STATE);
@@ -53,13 +55,14 @@ int zmain(void) {
                             mqtt_print("Info/Zumo/WARNING" , "Incompatible");
                             change_state(ERR_STATE);
                         }
+                        break;
                     }
                 }
-                vTaskDelay(1000);
+                vTaskDelay(100);
             break;   
                 
             case PRESCAN_STATE:
-                vTaskDelay(5000);
+                vTaskDelay(2000);
                 mqtt_print("Info/Zumo/Scan", "Pre-scan started");
                 
                 move_to_next(speed);
@@ -67,7 +70,6 @@ int zmain(void) {
                 pre_scan(speed);
                 
                 change_state(NAV_STATE);
-                vTaskDelay(1000);
                 mqtt_print("Ctrl/Zumo/Move", "-2");
             break;
             
@@ -103,7 +105,6 @@ int zmain(void) {
             case CMP_NAV_STATE:
                 complete_track(speed);
                 change_state(FIN_IDLE_STATE);
-                vTaskDelay(1000);
             break;
             
             case FIN_IDLE_STATE:
