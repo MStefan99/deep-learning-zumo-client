@@ -39,7 +39,7 @@
     void mqtt_send(mqtt_message msg);
     
     
-    // DON'T USE THE FOLLOWING FUNCTIONS!
+    // Do not use
     void SMQTTReceive(MessageData *msg);
     void SMQTTQueueInit();
     void SMQTTTask();

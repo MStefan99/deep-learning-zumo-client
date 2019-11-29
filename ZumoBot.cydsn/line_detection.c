@@ -12,6 +12,10 @@
 
 #include "line_detection.h"
 
+    
+ref_offset ref_get_offset();
+void reflectance_normalize(sensors *ref);
+
 
 ref_offset offset = {0, 0, 0};
 

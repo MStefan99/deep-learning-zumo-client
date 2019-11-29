@@ -39,7 +39,6 @@
     
     // DON'T USE THE FOLLOWING FUNCTIONS!
     list new_list();
-    element *list_alloc_element(element *prev, element *next, const void *content, size_t size);
 
 #endif
 

@@ -32,10 +32,6 @@
     int intersection_detected();
     int line_centered();
     
-    // Used automatically
-    ref_offset ref_get_offset();
-    void reflectance_normalize(sensors *ref);
-    
 #endif
 
 /* [] END OF FILE */
