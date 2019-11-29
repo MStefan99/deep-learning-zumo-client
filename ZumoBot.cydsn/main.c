@@ -1,5 +1,12 @@
 #include "main.h"
 
+bool calibrated = false;
+static uint8_t speed = 100;
+tile t;
+mqtt_message msg = {"", ""};
+int action = 0;
+const char mqtt_version[] = "v0.1.1";
+
 
 int zmain(void) {
     BatteryLed_Write(1);
@@ -13,8 +20,8 @@ int zmain(void) {
     vl53l0x_init();
     LED_Timer_Start();
     
-    mqtt_sub("Net/#");
-    mqtt_print("Zumo/Status", "Ready");
+    mqtt_sub("Ctrl/Net/#");
+    mqtt_print("Ctrl/Zumo/Status", "Ready");
     change_state(BOOT_IDLE_STATE);
     
     while (1) {
@@ -33,12 +40,12 @@ int zmain(void) {
             
             case WAIT_STATE:
                 if (mqtt_receive(&msg)) {
-                    if (!strcmp(msg.topic, "Net/Status") && !strcmp(msg.message, "Ready")) {
+                    if (!strcmp(msg.topic, "Ctrl/Net/Status") && !strcmp(msg.message, "Ready")) {
                         mqtt_print("Ack/Zumo" , "Ready");
-                        mqtt_print("Zumo/Version", "%s", mqtt_version);
+                        mqtt_print("Ctrl/Zumo/Version", "%s", mqtt_version);
                     }
                     
-                    if (!strcmp(msg.topic, "Net/Version")) {
+                    if (!strcmp(msg.topic, "Ctrl/Net/Version")) {
                         if (!strcmp(msg.message, mqtt_version)) {
                             mqtt_print("Info/Zumo/Connect" , "Server found");
                             change_state(PRESCAN_STATE);
@@ -61,12 +68,12 @@ int zmain(void) {
                 
                 change_state(NAV_STATE);
                 vTaskDelay(1000);
-                mqtt_print("Zumo/Move", "-2");
+                mqtt_print("Ctrl/Zumo/Move", "-2");
             break;
             
             case NAV_STATE:
                 if (mqtt_receive(&msg)) { 
-                    if (!strcmp(msg.topic, "Net/Status")) {
+                    if (!strcmp(msg.topic, "Ctrl/Net/Status")) {
                         if (!strcmp(msg.message, "Finish")) {
                             mqtt_print("Ack/Zumo", "Finish");
                             change_state(CMP_NAV_STATE);
@@ -75,7 +82,7 @@ int zmain(void) {
                             change_state(FIN_IDLE_STATE);
                         }
                       
-                    } else if (!strcmp(msg.topic, "Net/Action")) {
+                    } else if (!strcmp(msg.topic, "Ctrl/Net/Action")) {
                         sscanf(msg.message, "%i", &action);
                         mqtt_print("Ack/Zumo", "Action");
                         
@@ -84,10 +91,10 @@ int zmain(void) {
                         send_obstacle(t);
                         
                         if (dist < 0 || dist > 1) {
-                            mqtt_print("Zumo/Move", "%i", action);
+                            mqtt_print("Ctrl/Zumo/Move", "%i", action);
                             move_to_next(speed);
                         } else {
-                            mqtt_print("Zumo/Move", "-1");
+                            mqtt_print("Ctrl/Zumo/Move", "-1");
                         }
                     }
                 }

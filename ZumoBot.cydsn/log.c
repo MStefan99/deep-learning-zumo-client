@@ -112,9 +112,9 @@ int list_get_size(list l) {
 void list_print_all(list l, void (*print_element)(const void *)) {
     int i = 0;
     if (!l.first) {
-        mqtt_print("Zumo/log", "List empty");
+        mqtt_print("Log/Zumo", "List empty");
     } else {
-        mqtt_print("Zumo/log", "List elements:");
+        mqtt_print("Log/Zumo", "List elements:");
         for (element *p = l.first; p; p = p->next, i++) {
             print_element(p->content);
         }

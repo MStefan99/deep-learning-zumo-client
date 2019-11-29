@@ -23,7 +23,7 @@ position robot_position = {3, 12, 0};
 
 
 void send_coords() {
-    mqtt_print("Zumo/Coords", "(%i, %i)", robot_position.x, robot_position.y);
+    mqtt_print("Ctrl/Zumo/Coords", "(%i, %i)", robot_position.x, robot_position.y);
 }
 
 

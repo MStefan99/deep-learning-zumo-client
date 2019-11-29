@@ -33,14 +33,6 @@
     #include "scan.h"
     #include "states.h"
     
-
-    bool calibrated = false;
-    static uint8_t speed = 100;
-    tile t;
-    mqtt_message msg = {"", ""};
-    int action = 0;
-    const char mqtt_version[] = "v0.1";
-    
     
     CY_ISR_PROTO(button_isr);
     CY_ISR_PROTO(led_isr);

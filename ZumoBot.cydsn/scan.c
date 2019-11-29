@@ -19,7 +19,7 @@ const int pos_fix = 100; //mm
 
 void send_obstacle(tile t) {
     if (t.x != -100 && t.y != -100) {
-        mqtt_print("Zumo/Obst", "(%i, %i)", t.x, t.y);
+        mqtt_print("Ctrl/Zumo/Obst", "(%i, %i)", t.x, t.y);
     }
 }
 
