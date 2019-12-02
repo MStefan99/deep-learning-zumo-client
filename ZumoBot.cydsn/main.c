@@ -1,7 +1,7 @@
 #include "main.h"
 
 
-bool calibrated = false;
+bool setup_done = false;
 static uint8_t speed = 100;
 tile t;
 mqtt_message msg = {"", ""};
@@ -16,9 +16,7 @@ int zmain(void) {
     Button_Interrupt_StartEx(button_isr);
     LED_Interrupt_StartEx(led_isr);
     
-    reflectance_start();
     UART_1_Start(); 
-    vl53l0x_init();
     LED_Timer_Start();
     
     mqtt_sub("Ctrl/Net/#");
@@ -28,15 +26,18 @@ int zmain(void) {
     while (1) {
         switch (current_state) {
             case BOOT_IDLE_STATE:
-                vTaskDelay(1000);
+                vTaskDelay(100);
             break;
                 
             case CLB_IDLE_STATE:
-                if (!calibrated) { 
-                    calibrate_ref();
-                    calibrated = true;
+                if (!setup_done) {
+                    reflectance_start();
+                    vl53l0x_init();
                 }
                 vTaskDelay(1000);
+            
+                L3GD20H_calibrate();
+                calibrate_ref();
             break;
             
             case WAIT_STATE:
@@ -108,15 +109,15 @@ int zmain(void) {
             break;
             
             case FIN_IDLE_STATE:
-                vTaskDelay(1000);
+                vTaskDelay(100);
             break;
             
             case LOCK_STATE:
-                vTaskDelay(1000);
+                vTaskDelay(100);
             break;
             
             case ERR_STATE:
-                vTaskDelay(1000);
+                vTaskDelay(100);
             break;
         
             default:

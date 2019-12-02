@@ -167,7 +167,7 @@
 #define L3GD20H_frequency 800
 #define L3GD20H_range 245
 #define L3GD20H_FIFO_READ 0x80
-#define L3GD20H_FIFO_depth 20 
+#define L3GD20H_FIFO_depth 10 
 #define x_enabled 0
 #define y_enabled 0
 #define z_enabled 1

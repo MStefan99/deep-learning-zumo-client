@@ -30,7 +30,7 @@ int intersection_detected() {
     sensors ref;
     const uint16_t threshold = 20000;
     
-    reflectance_read(&ref);
+    ref_read_normalized(&ref);
     if(ref.l3 + ref.l2 + ref.l1 + ref.r1 + ref.r2 + ref.r3 > threshold * 4) {
         return 1;
     }
@@ -38,12 +38,23 @@ int intersection_detected() {
 }
 
 
+int line_detected() {
+    sensors ref;
+    const uint16_t threshold = 18000;
+    ref_read_normalized(&ref);
+    
+    return ref.r1 > threshold || ref.l1 > threshold ||
+                ref.r2 > threshold || ref.l2 > threshold ||
+                ref.r3 > threshold || ref.l3 > threshold;
+}
+
+
 int line_centered() {
     sensors ref;
-    const uint16_t threshold = 20000;
-    reflectance_read(&ref);
+    const uint16_t threshold = 18000;
+    ref_read_normalized(&ref);
     
-    return abs(get_line_pos()) < 5 && ref.r1 > threshold && ref.l1 > threshold;
+    return ref.r1 > threshold && ref.l1 > threshold;
 }
 
 
@@ -73,7 +84,7 @@ void reflectance_normalize(sensors *ref) {
 
 int get_line_pos() {
     sensors ref;
-    reflectance_read(&ref);
+    ref_read_normalized(&ref);
     
     int setpoint_value_inner = 21500;
     int setpoint_value_outer = 5000;

@@ -31,6 +31,7 @@
     int get_line_pos();
     int intersection_detected();
     int line_centered();
+    int line_detected();
     
 #endif
 
