@@ -40,7 +40,7 @@ int intersection_detected() {
 
 int line_detected() {
     sensors ref;
-    const uint16_t threshold = 18000;
+    const uint16_t threshold = 20000;
     ref_read_normalized(&ref);
     
     return ref.r1 > threshold || ref.l1 > threshold ||
@@ -51,7 +51,7 @@ int line_detected() {
 
 int line_centered() {
     sensors ref;
-    const uint16_t threshold = 18000;
+    const uint16_t threshold = 20000;
     ref_read_normalized(&ref);
     
     return ref.r1 > threshold && ref.l1 > threshold;

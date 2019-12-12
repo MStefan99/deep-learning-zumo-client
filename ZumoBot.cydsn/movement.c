@@ -47,16 +47,16 @@ void motor_turn_diff(uint8_t speed, int diff) {
     uint8_t l_speed = speed;
     uint8_t r_speed = speed;
     if (abs(diff) > speed) {
-        if(diff>0) {
-            r_speed=0;
+        if(diff > 0) {
+            r_speed = 0;
         } else {
-            l_speed=0;
+            l_speed = 0;
         }
     } else {
         if (diff > 0){
-           r_speed -= diff*speed/255;
+           r_speed -= diff * speed / 255;
        } else {
-           l_speed += diff*speed/255;
+           l_speed += diff * speed / 255;
        }
     }
     PWM_WriteCompare1(l_speed); 
@@ -157,10 +157,15 @@ void rotate_to(int dir, uint8_t speed) {
             side = 1;
         }
         
+        // Exceptional cases when the robot needs to turn inside on the edges of the track
         if ((robot_position.x == 6 && robot_position.dir == 0 && dir == 2) ||  // Right edge
                 (robot_position.x == 0 && robot_position.dir == 2 && dir == 0)) {  // Left edge
-            side = 0;  // Exceptional case when the robot needs to turn inside on the edges of the track
+            side = 0;  
+        } 
+        if (robot_position.y == 10  && robot_position.dir == 3 && dir == 1) {  // Bottom egde
+            side = 1;
         }
+        
         for (int i = 0; i < n; ++i) {
             motor_rotate(side, speed);
         }

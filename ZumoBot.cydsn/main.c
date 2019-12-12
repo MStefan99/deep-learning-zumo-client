@@ -1,6 +1,9 @@
 #include "main.h"
 
 
+#define PRESCAN_ENABLED 1
+
+
 bool setup_done = false;
 static uint8_t speed = 100;
 tile t;
@@ -68,7 +71,9 @@ int zmain(void) {
                 
                 move_to_next(speed);
                 move_to_next(speed);
-                pre_scan(speed);
+                if (PRESCAN_ENABLED) {
+                    pre_scan(speed);
+                }
                 
                 change_state(NAV_STATE);
                 mqtt_print("Ctrl/Zumo/Move", "-2");
