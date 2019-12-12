@@ -14,6 +14,7 @@
 
 
 const state states[10] = {
+        {ERR_STATE, "Error", 0, {300, 50, 100, 50, 0}},  // State 8 - error
         {BOOT_IDLE_STATE, "Boot idle", 0, {50, 1450, 0}}, // State 0 - idle (booted)
         {CLB_IDLE_STATE, "Clb idle", 0, {50, 150, 50, 1250, 0}},  // State 1 - idle (calibrated)
         {WAIT_STATE, "Wait", 0, {900, 100, 100, 100, 800, 0}},  // State 2 - waiting for server
@@ -21,8 +22,8 @@ const state states[10] = {
         {NAV_STATE, "Nav", 1, {300, 200, 300, 1200, 0}},  // State 4 - server-guided navigation
         {CMP_NAV_STATE, "Cmp nav", 1, {300, 200, 300, 200, 300, 700}},  // State 5 - track completion
         {FIN_IDLE_STATE, "Finish idle", 0, {50, 150, 50, 150, 50, 1050, 0}},  // State 6 - idle (finished)
-        {LOCK_STATE, "Locked", 0, {300, 50, 100, 50, 0}},  // State 7 - motor locked
-        {ERR_STATE, "Error", 0, {125, 125, 0}}  // State 8 - error
+        {LOCK_STATE, "Locked", 0, {125, 125, 0}},  // State 7 - motor locked
+        {LOW_VOLTAGE_STATE, "Low voltage", 0, {450, 50, 0}}  // State 9 - low voltage
 };
 volatile state_id_t current_state = ERR_STATE;
 volatile state_id_t prev_state = ERR_STATE;
@@ -53,7 +54,7 @@ int find_state(state_id_t state) {
             return i;
         }
     }
-    return 8;
+    return -1;
 }
 
 

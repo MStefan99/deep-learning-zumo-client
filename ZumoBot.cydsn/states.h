@@ -19,7 +19,8 @@
     
     
     typedef enum {
-        PREV_STATE = -1,
+        ERR_STATE = -1,
+        PREV_STATE,
         BOOT_IDLE_STATE,
         CLB_IDLE_STATE,
         WAIT_STATE,
@@ -28,7 +29,7 @@
         CMP_NAV_STATE,
         FIN_IDLE_STATE,
         LOCK_STATE,
-        ERR_STATE
+        LOW_VOLTAGE_STATE
     } state_id_t;
     
     

@@ -9,7 +9,7 @@ static uint8_t speed = 100;
 tile t;
 mqtt_message msg = {"", ""};
 int action = 0;
-const char mqtt_version[] = "v0.1.1";
+const char mqtt_version[] = "v0.1.2";
 
 
 int zmain(void) {
@@ -88,6 +88,9 @@ int zmain(void) {
                         } else if (!strcmp(msg.message, "Stuck")) {
                             mqtt_print("Ack/Zumo", "Stuck");
                             change_state(FIN_IDLE_STATE);
+                        } else if (!strcmp(msg.message, "Abort")) {
+                            mqtt_print("Ack/Zumo", "Abort");
+                            change_state(ERR_STATE);
                         }
                       
                     } else if (!strcmp(msg.topic, "Ctrl/Net/Action")) {
@@ -125,6 +128,10 @@ int zmain(void) {
                 vTaskDelay(100);
             break;
         
+            case LOW_VOLTAGE_STATE:
+                vTaskDelay(100);
+            break;
+                
             default:
                 mqtt_print("Info/Zumo/WARNING", "Undef state!");
                 change_state(ERR_STATE);
